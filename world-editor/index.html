@@ -5612,9 +5612,8 @@ function wikiExport() {
 }
 $('wikiBtn').addEventListener('click', () => {
   if (!S.params.featureList || !S.params.regionList) { toast('Run the pipeline first'); return; }
-  const { files, counts } = wikiExport(), blob = zipFiles(files), a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'wiki-export.zip'; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-  toast('Exported ' + counts[0] + ' regions, ' + counts[1] + ' landmarks and ' + counts[2] + ' named places (' + (files.length - 1) + ' pages)', 6000);
+  const { files, counts } = wikiExport();
+  saveFile('wiki-export.zip', zipFiles(files), 'Exported ' + counts[0] + ' regions, ' + counts[1] + ' landmarks and ' + counts[2] + ' named places (' + (files.length - 1) + ' pages)');
 });
 
 // ---- Plate borders: lines along every cell edge where the plate changes, so crust can be painted to them. Always on
@@ -5704,7 +5703,7 @@ $('mapImgBtn').addEventListener('click', () => {
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), im = g.createImageData(W, H);
   for (let y = 0; y < H; y++) im.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4); // (GL reads bottom-up)
   g.putImageData(im, 0, 0); updateCamera(); requestRender();
-  cv.toBlob((blob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (S.fields[S.active].label || 'map').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-map.png'; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('Exported the map image'); }, 'image/png');
+  cv.toBlob((blob) => saveFile((S.fields[S.active].label || 'map').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-map.png', blob, 'Exported the map image'), 'image/png');
 });
 
 // ====================================================================
@@ -5782,20 +5781,25 @@ function fromJSON(text) {
   return o;
 }
 
-$('exportBtn').addEventListener('click', async () => {
-  const name = 'world-' + (S.params.seed || 'untitled').replace(/[^a-z0-9_-]/gi, '') + '.json';
-  const blob = new Blob([toJSON()], { type: 'application/json' });
+// Every file the editor gives out goes through here. Published as a Claude Artifact the page may not download
+// directly (a plain link download is silently dropped there): it offers the file through the viewer's downloads
+// capability, which asks them to confirm. Opened any other way (a file, the local server) it downloads as usual.
+async function saveFile(name, blob, done) {
   let dl = null;
   if (window.claude && typeof window.claude.use === 'function') { try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; } }
   if (dl) {
-    try { await dl.save({ filename: name, data: blob }); toast('Exported ' + name); }
+    try { await dl.save({ filename: name, data: blob }); toast(done || 'Exported ' + name, 6000); }
     catch (err) { if (err && err.code !== 'declined') toast('Export failed: ' + ((err && err.message) || 'unknown error')); }
     return;
   }
   if (window.claude) { toast('Saving files is not available in this view. Your world is still saved in this browser.'); return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-  toast('Exported ' + name);
+  toast(done || 'Exported ' + name, 6000);
+}
+$('exportBtn').addEventListener('click', () => {
+  const name = 'world-' + (S.params.seed || 'untitled').replace(/[^a-z0-9_-]/gi, '') + '.json';
+  saveFile(name, new Blob([toJSON()], { type: 'application/json' }));
 });
 $('importFile').addEventListener('change', async (e) => {
   const file = e.target.files[0]; e.target.value = ''; if (!file) return;
