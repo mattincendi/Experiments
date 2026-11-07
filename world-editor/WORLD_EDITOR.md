@@ -2204,6 +2204,49 @@ and 22 basins; a continent named in the inspector kept its name and number
 through a rerun; the export held 93 regions, 417 landmarks and a named cell,
 512 files, a valid zip. The default world still dumps byte-identical.
 
+## Export data
+
+World tab, **Export data**: data for other programs, all through the same save
+path as the other exports (`saveFile`: the viewer's downloads capability on a
+published page, a plain download elsewhere).
+
+- **Height map:** a 16-bit greyscale PNG (colour type 0, depth 16; the canvas
+  only writes 8-bit, so the editor encodes the PNG itself and deflates it with
+  the browser's `CompressionStream`), black the lowest point and white the
+  highest, with or without the sea floor (flattened to sea level), in a zip
+  with a JSON giving the scale (`value = black + pixel / 65535 × (white −
+  black)`), the area and the projection.
+- **The current layer as data:** a scalar layer the same way, over its own
+  range; a category layer as an image of its colours with the key (value,
+  name, colour) in the JSON.
+- **Cell table (CSV):** one row per cell, latitude, longitude, height and
+  the current layer or every layer (categories by name).
+- Options: width 1,024–8,192 px (height follows the area's proportions), and
+  the whole globe or a box of latitude and longitude (west greater than east
+  wraps across 180°).
+
+The images are drawn by the GPU through the map's equirectangular projection
+in a pass (`dataMat`) that writes each pixel's value, interpolated across the
+cell from its centre and corners as the contours are (a category flat per
+cell), scaled to 0–65,535 and packed into two 8-bit channels, then read back.
+
+Tested: a 2,048 × 1,024 height map held 58,945 distinct levels and read back
+within 5 m of the cells' heights at their centres (median; 39 m at the 90th
+percentile, where a pixel falls between a cell's centre and its edge); a box
+from 150° E to 120° W across 180° came out 1,024 × 796; the biome layer came
+with its 42-entry key; the CSV held all 100,002 cells (the first try lost
+201 on the 180° line and the poles: positions are single precision, so 180°
+read back a hair over).
+
+## Pinned (agreed, not yet built)
+
+- **GeoJSON** for mapping programs (QGIS and the like): landmarks and named
+  places as points, regions as outlines, coastlines, rivers and plate borders
+  as lines.
+- **Normal map**: a texture of the slopes to light a smooth sphere in a 3D
+  renderer, beside the height map; and maps of single continents and the
+  like, cut by region.
+
 ## Planned stages (design agreed; details may be adjusted when built)
 
 **5b. Soil** (with climate, after stage 10): alluvial, loess, laterite, podzol, chernozem, permafrost,

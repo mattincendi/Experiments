@@ -312,6 +312,15 @@ form.card { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line
         <div class="row" style="flex-wrap: nowrap"><button id="alignBtn">Align pentagons to pins</button><button id="unalignBtn">Standard</button><span class="num" id="alignOut"></span></div></div>
       <div class="field"><label title="The current layer as a flat map (equirectangular, longitude 0 in the middle, 4096 × 2048), for use outside the editor">Map image</label>
         <div class="row" style="flex-wrap: nowrap"><button id="mapImgBtn">Export map image</button></div></div>
+      <div class="field"><label for="dxKind" title="Data for other programs. Height map: a 16-bit greyscale PNG, black the lowest point and white the highest, with a file giving the scale in metres. Layer as data: any layer the same way (a scalar layer as 16-bit greyscale, a category layer as colours with a key). Cell table: a CSV, one row per cell. Images are equirectangular: longitude across, latitude up">Export data</label>
+        <div class="row" style="flex-wrap: wrap; gap: 4px"><select id="dxKind"><option value="height">Height map (16-bit PNG)</option><option value="layer">The current layer as data (PNG)</option><option value="csv">Cell table (CSV)</option></select>
+          <select id="dxWidth" aria-label="Image width"><option value="1024">1024 px wide</option><option value="2048">2048 px wide</option><option value="4096" selected>4096 px wide</option><option value="8192">8192 px wide</option></select>
+          <select id="dxSea" aria-label="Sea floor"><option value="1">With the sea floor</option><option value="0">Sea flattened to sea level</option></select>
+          <select id="dxCsv" aria-label="Columns" hidden><option value="active">The current layer</option><option value="all">Every layer</option></select></div>
+        <div class="row" style="flex-wrap: wrap; gap: 4px; margin-top: 4px"><label class="tog"><input type="checkbox" id="dxBox"> Only an area:</label>
+          <input type="number" id="dxS" value="-90" min="-90" max="90" step="1" style="width: 4.2em" aria-label="South latitude" title="South edge (° latitude)"><input type="number" id="dxN" value="90" min="-90" max="90" step="1" style="width: 4.2em" aria-label="North latitude" title="North edge (° latitude)">
+          <input type="number" id="dxW" value="-180" min="-180" max="180" step="1" style="width: 4.6em" aria-label="West longitude" title="West edge (° longitude, east positive)"><input type="number" id="dxE" value="180" min="-180" max="180" step="1" style="width: 4.6em" aria-label="East longitude" title="East edge (° longitude, east positive)">
+          <button id="dxBtn">Export</button></div></div>
       <div class="field"><label title="A zip for a wiki: gazetteer rows (name, what it is, latitude, longitude, the pin region it lies in) for every region, landmark and named cell, and a page for each with what the layers say of it, your notes, and links to the places near it or in it. Positions stay in the gazetteer rows; the pages link there">Wiki</label>
         <div class="row" style="flex-wrap: nowrap"><button id="wikiBtn">Export to wiki</button></div></div>
       <div class="field"><label for="hotInput">Random plumes</label>
@@ -5540,7 +5549,7 @@ function zipFiles(files) {
   const parts = [], dir = []; let off = 0;
   const hdr = (n) => new DataView(new ArrayBuffer(n));
   for (const [name, text] of files) {
-    const nb = enc.encode(name), db = enc.encode(text), c = crc(db), h = hdr(30);
+    const nb = enc.encode(name), db = typeof text === 'string' ? enc.encode(text) : text, c = crc(db), h = hdr(30); // (text, or bytes)
     h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint32(14, c, true); h.setUint32(18, db.length, true); h.setUint32(22, db.length, true); h.setUint16(26, nb.length, true);
     parts.push(new Uint8Array(h.buffer), nb, db);
     const d = hdr(46); d.setUint32(0, 0x02014b50, true); d.setUint16(4, 20, true); d.setUint16(6, 20, true); d.setUint16(8, 0x0800, true); d.setUint32(16, c, true); d.setUint32(20, db.length, true); d.setUint32(24, db.length, true); d.setUint16(28, nb.length, true); d.setUint32(42, off, true);
@@ -5693,6 +5702,99 @@ $('pinFile').addEventListener('change', async (e) => {
 $('pinClear').addEventListener('click', () => { S.params.pins = null; autosave(); updatePins(); renderInspector(true); });
 // The map image: the map view rendered once, off screen, at 4096 × 2048 with longitude 0 in the middle (the map's own
 // projection is equirectangular: x = longitude, y = latitude, both × 2/π), overlays off, read back as a PNG.
+// ---- Export data: height map and layers as 16-bit PNGs, and the cell table ----
+// The images are drawn by the GPU through the map's own equirectangular projection, but a pass that writes each
+// pixel's VALUE instead of a colour: interpolated across each cell from its centre and corners (as the contours are),
+// scaled into 0..65535 and packed into two 8-bit channels, read back and written as a true 16-bit greyscale PNG (the
+// canvas can only make 8-bit ones). A category layer is drawn flat per cell, as numbers, then coloured from its key.
+const dataMat = new THREE.ShaderMaterial({ side: THREE.DoubleSide,
+  uniforms: { uMap: mapU.uMap, uMapLon: mapU.uMapLon, uMin: { value: 0 }, uMax: { value: 1 }, uIndex: { value: 0 } },
+  vertexShader: `attribute float dval; attribute float cLon; varying float vD; ${MAP_GLSL}
+    void main() { vD = dval; gl_Position = projectionMatrix * modelViewMatrix * vec4(toMap(position, cLon, 0.0), 1.0); }`,
+  fragmentShader: `precision highp float; uniform float uMin; uniform float uMax; uniform float uIndex; varying float vD;
+    void main() {
+      if (uIndex > 0.5) { gl_FragColor = vec4(floor(vD + 0.5) / 255.0, 0.0, 0.0, 1.0); return; }
+      float x = floor(clamp((vD - uMin) / max(uMax - uMin, 1e-9), 0.0, 1.0) * 65535.0 + 0.5), hi = floor(x / 256.0);
+      gl_FragColor = vec4(hi / 255.0, (x - hi * 256.0) / 255.0, 0.0, 1.0);
+    }` });
+// The area: the whole globe, or a box of latitude and longitude (east positive; west > east wraps across 180°).
+function dataArea() {
+  const box = $('dxBox').checked, S0 = box ? clamp(+$('dxS').value, -90, 90) : -90, N0 = box ? clamp(+$('dxN').value, -90, 90) : 90;
+  let W0 = box ? clamp(+$('dxW').value, -180, 180) : -180, E0 = box ? clamp(+$('dxE').value, -180, 180) : 180; if (box && E0 <= W0) E0 += 360;
+  if (!(N0 > S0) || !(E0 > W0)) return null;
+  return { S: S0, N: N0, W: W0, E: E0 };
+}
+// Render one value per vertex (vals: a Float32Array over the mesh's vertices) over the area at w × h pixels.
+function renderData(vals, w, h, A, min, max, index) {
+  const g = new THREE.BufferGeometry(), src = mesh.geometry;
+  g.setAttribute('position', src.attributes.position); g.setAttribute('cLon', src.attributes.cLon); g.setIndex(src.index); g.setAttribute('dval', new THREE.BufferAttribute(vals, 1));
+  const m = new THREE.Mesh(g, dataMat), d2 = 2 / Math.PI, cen = (A.W + A.E) / 2 * Math.PI / 180, half = (A.E - A.W) / 2 * Math.PI / 180;
+  const cam = new THREE.OrthographicCamera(-half * d2, half * d2, A.N * Math.PI / 180 * d2, A.S * Math.PI / 180 * d2, -10, 10);
+  const keep = { map: mapU.uMap.value, lon: mapU.uMapLon.value }, scn = new THREE.Scene(); scn.add(m);
+  mapU.uMap.value = 1; mapU.uMapLon.value = cen; dataMat.uniforms.uMin.value = min; dataMat.uniforms.uMax.value = max; dataMat.uniforms.uIndex.value = index ? 1 : 0;
+  const rt = new THREE.WebGLRenderTarget(w, h); renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scn, cam);
+  const px = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(rt, 0, 0, w, h, px); renderer.setRenderTarget(null); rt.dispose(); g.dispose();
+  mapU.uMap.value = keep.map; mapU.uMapLon.value = keep.lon; readTheme(); requestRender();
+  return px; // bottom row first
+}
+// Values per mesh vertex for a layer: each cell's own at its centre, the mean of the three cells at each corner
+// (smooth); or, for a category, the cell's own everywhere (flat).
+function vertexValues(get, flat) {
+  const G = S.grid, out = new Float32Array(mesh.geometry.attributes.position.count);
+  for (let i = 0; i < S.N; i++) { const v0 = get(i); out[vStart[i]] = v0;
+    for (let q = 0; q < G.off[i + 1] - G.off[i]; q++) { const tt = G.corner[G.off[i] + q]; out[vStart[i] + 1 + q] = flat ? v0 : (get(triCells[tt * 3]) + get(triCells[tt * 3 + 1]) + get(triCells[tt * 3 + 2])) / 3; } }
+  return out;
+}
+// A 16-bit greyscale PNG (colour type 0, depth 16), deflated by the browser's own CompressionStream.
+async function png16(w, h, data) {
+  const raw = new Uint8Array(h * (1 + w * 2));
+  for (let y = 0; y < h; y++) { const o = y * (1 + w * 2); raw[o] = 0; for (let x = 0; x < w; x++) { const v = data[y * w + x]; raw[o + 1 + x * 2] = v >> 8; raw[o + 2 + x * 2] = v & 255; } }
+  const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
+  const crcT = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; crcT[n] = c >>> 0; }
+  const crc = (b) => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = crcT[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  const chunk = (type, body) => { const b = new Uint8Array(12 + body.length), dv = new DataView(b.buffer); dv.setUint32(0, body.length);
+    for (let k = 0; k < 4; k++) b[4 + k] = type.charCodeAt(k); b.set(body, 8); dv.setUint32(8 + body.length, crc(b.subarray(4, 8 + body.length))); return b; };
+  const ih = new Uint8Array(13), dv = new DataView(ih.buffer); dv.setUint32(0, w); dv.setUint32(4, h); ih[8] = 16; ih[9] = 0;
+  return new Blob([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', z), chunk('IEND', new Uint8Array(0))], { type: 'image/png' });
+}
+const slugOf = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+async function exportData() {
+  const kind = $('dxKind').value, A = dataArea(); if (!A) { toast('The area is empty: north must be above south'); return; }
+  const W = +$('dxWidth').value, H = Math.max(1, Math.round(W * (A.N - A.S) / (A.E - A.W))), f = kind === 'height' ? S.fields.elevation : S.fields[S.active];
+  const areaTxt = $('dxBox').checked ? '-' + [A.S, A.N, A.W, ((A.E + 180) % 360) - 180].map((v) => Math.round(v)).join('_') : '';
+  const meta = { width: W, height: H, projection: 'equirectangular: x is longitude, y latitude, north at the top', south: A.S, north: A.N, west: A.W, east: A.E > 180 ? A.E - 360 : A.E, cells: S.N, radiusKm: S.params.radiusKm };
+  if (kind === 'csv') { // one row per cell
+    const cols = $('dxCsv').value === 'all' ? S.order.filter((id) => !S.fields[id].hidden && !S.fields[id].transient) : [S.active], G = S.grid, deg = 180 / Math.PI;
+    const q = (v) => (/[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v), rows = ['cell,latitude,longitude,height_m,' + cols.map((id) => q(S.fields[id].label + (S.fields[id].unit ? ' (' + S.fields[id].unit + ')' : ''))).join(',')];
+    for (let i = 0; i < S.N; i++) { const la = G.lat[i] * deg; let lo = G.lon[i] * deg; if (lo - A.W < 0) lo += 360;
+      if ($('dxBox').checked && (la < A.S - 1e-4 || la > A.N + 1e-4 || lo < A.W - 1e-4 || lo > A.E + 1e-4)) continue; // (stored in single precision: 180° reads back a hair over)
+      rows.push(i + ',' + (G.lat[i] * deg).toFixed(4) + ',' + (G.lon[i] * deg).toFixed(4) + ',' + Math.round(height(i)) + ',' + cols.map((id) => { const fl = S.fields[id]; return fl.kind === 'enum' ? q(fl.values[val(fl, i)].name) : (+val(fl, i).toFixed(fl.dp == null ? 3 : fl.dp)).toString(); }).join(',')); }
+    saveFile((cols.length > 1 ? 'cells' : slugOf(S.fields[S.active].label)) + areaTxt + '.csv', new Blob([rows.join('\n') + '\n'], { type: 'text/csv' }), 'Exported ' + fmtInt(rows.length - 1) + ' cells'); return;
+  }
+  toast('Drawing the ' + (kind === 'height' ? 'height map' : f.label.toLowerCase()) + ' at ' + W + ' × ' + H + '…');
+  await new Promise((r) => setTimeout(r, 30));
+  const name = kind === 'height' ? 'height-map' + areaTxt : slugOf(f.label) + areaTxt;
+  if (f.kind === 'enum' && kind !== 'height') { // a category: its colours, and the key
+    const px = renderData(vertexValues((i) => val(f, i), true), W, H, A, 0, 1, true), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'), im = g.createImageData(W, H), rgb = f.values.map((v) => hexRGB(v.color || '#000000'));
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const k = px[((H - 1 - y) * W + x) * 4], c = rgb[k] || [0, 0, 0], o = (y * W + x) * 4; im.data[o] = c[0]; im.data[o + 1] = c[1]; im.data[o + 2] = c[2]; im.data[o + 3] = 255; }
+    g.putImageData(im, 0, 0); const png = new Uint8Array(await (await new Promise((r) => cv.toBlob(r, 'image/png'))).arrayBuffer());
+    meta.layer = f.label; meta.key = f.values.map((v, k) => ({ value: k, name: v.name, color: v.color })).filter((e) => e.value > 0);
+    saveFile(name + '.zip', zipFiles([[name + '.png', png], [name + '.json', JSON.stringify(meta, null, 1)]]), 'Exported the ' + f.label.toLowerCase() + ' with its key'); return;
+  }
+  // a scalar: 16-bit greyscale over the layer's own range (the height map's from the lowest to the highest point)
+  const sea = kind === 'height' && $('dxSea').value === '0', get = kind === 'height' ? (i) => (sea ? Math.max(0, height(i)) : height(i)) : (i) => val(f, i);
+  let min = Infinity, max = -Infinity; for (let i = 0; i < S.N; i++) { const v = get(i); if (v < min) min = v; if (v > max) max = v; } if (!(max > min)) max = min + 1;
+  const px = renderData(vertexValues(get, false), W, H, A, min, max, false), d16 = new Uint16Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const o = ((H - 1 - y) * W + x) * 4; d16[y * W + x] = px[o] * 256 + px[o + 1]; }
+  Object.assign(meta, { layer: kind === 'height' ? 'Height above sea level' + (sea ? ' (the sea flattened to sea level)' : '') : f.label, unit: kind === 'height' ? 'm' : f.unit || '', black: min, white: max,
+    read: 'value = black + (pixel / 65535) × (white − black)' });
+  saveFile(name + '.zip', zipFiles([[name + '.png', new Uint8Array(await (await png16(W, H, d16)).arrayBuffer())], [name + '.json', JSON.stringify(meta, null, 1)]]),
+    'Exported the ' + (kind === 'height' ? 'height map' : f.label.toLowerCase()) + ': black ' + Math.round(min) + ', white ' + Math.round(max) + (meta.unit ? ' ' + meta.unit : ''));
+}
+$('dxKind').addEventListener('change', () => { const k = $('dxKind').value; $('dxSea').hidden = k !== 'height'; $('dxCsv').hidden = k !== 'csv'; $('dxWidth').hidden = k === 'csv'; });
+$('dxBtn').addEventListener('click', () => { if (!mesh || !S.fields.elevation) return; exportData().catch((e) => toast('Export failed: ' + (e && e.message || e), 6000)); });
+
 $('mapImgBtn').addEventListener('click', () => {
   const W = 4096, H = 2048, rt = new THREE.WebGLRenderTarget(W, H), cam = new THREE.OrthographicCamera(-2, 2, 1, -1, -10, 10);
   const keep = { map: mapU.uMap.value, lon: mapU.uMapLon.value, grid: mat.uniforms.uGrid.value, rot: globe.rotation.clone() }, hidden = [];
