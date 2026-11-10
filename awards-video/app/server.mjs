@@ -14,7 +14,11 @@ const OUT = path.join(ROOT, 'out');
 const DATA = path.join(ROOT, 'data', 'awards.json');
 const UI_BUILD = path.join(ROOT, 'app', '.build');
 const PORT = Number(process.env.PORT || 4321);
-const BROWSER = process.env.REMOTION_BROWSER || null;
+
+// Remotion keeps its downloaded browser in <project>/node_modules/.remotion, found from
+// the working directory, so always run from the project folder.
+process.chdir(ROOT);
+const BROWSER_CACHE = path.join(ROOT, 'node_modules', '.remotion');
 
 for (const d of [CLIPS, OUT, UI_BUILD]) fs.mkdirSync(d, {recursive: true});
 
@@ -31,6 +35,97 @@ await esbuild.build({
 	minify: true,
 	logLevel: 'error',
 });
+
+// ---------- render browser ----------
+// Installed browsers we can fall back to if the download can't be used.
+const SYSTEM_BROWSERS = {
+	darwin: [
+		'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+		'/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+		'/Applications/Chromium.app/Contents/MacOS/Chromium',
+		path.join(process.env.HOME || '', 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
+	],
+	win32: [
+		path.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'Google\\Chrome\\Application\\chrome.exe'),
+		path.join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Google\\Chrome\\Application\\chrome.exe'),
+		path.join(process.env['LOCALAPPDATA'] || '', 'Google\\Chrome\\Application\\chrome.exe'),
+		path.join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Microsoft\\Edge\\Application\\msedge.exe'),
+		path.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'Microsoft\\Edge\\Application\\msedge.exe'),
+	],
+	linux: ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/microsoft-edge'],
+};
+
+let browserChoice = null; // {executable, chromeMode}
+
+/**
+ * Run Remotion's browser download in a separate process. Inside one process a
+ * failed download makes every later render fail with the same error, so it is
+ * kept out of the app's own process.
+ */
+const DOWNLOAD_SCRIPT = `
+import {ensureBrowser} from '@remotion/renderer';
+try {
+	const st = await ensureBrowser({
+		onBrowserDownload: () => ({version: null, onProgress: ({percent}) => console.log('P ' + percent)}),
+	});
+	console.log(st && st.type !== 'no-browser' && st.path ? 'OK ' + st.path : 'ERR no browser after download');
+} catch (e) {
+	console.log('ERR ' + String((e && e.message) || e).split('\\n')[0]);
+}`;
+
+const downloadBrowserInChild = () =>
+	new Promise((resolve) => {
+		const child = spawn(process.execPath, ['--input-type=module', '-e', DOWNLOAD_SCRIPT], {cwd: ROOT});
+		let result = {path: null, error: null};
+		let buf = '';
+		child.stdout.on('data', (d) => {
+			buf += d;
+			const lines = buf.split('\n');
+			buf = lines.pop();
+			for (const line of lines) {
+				if (line.startsWith('P ')) job.message = `Downloading the render browser (first time only)… ${Math.round(Number(line.slice(2)) * 100)}%`;
+				else if (line.startsWith('OK ')) result = {path: line.slice(3).trim(), error: null};
+				else if (line.startsWith('ERR ')) result = {path: null, error: line.slice(4).trim()};
+			}
+		});
+		child.on('error', (e) => resolve({path: null, error: String(e.message || e)}));
+		child.on('close', () => resolve(result.path || result.error ? result : {path: null, error: 'download helper stopped'}));
+	});
+
+/**
+ * Find a browser to draw frames with. Order: REMOTION_BROWSER, Remotion's own
+ * download (repairing a half-finished one), then an installed Chrome/Edge.
+ */
+const resolveBrowser = async () => {
+	if (browserChoice) return browserChoice;
+	if (process.env.REMOTION_BROWSER) {
+		return (browserChoice = {executable: process.env.REMOTION_BROWSER, chromeMode: 'headless-shell'});
+	}
+	let downloadError = null;
+	for (let attempt = 1; attempt <= 2; attempt++) {
+		job.message = attempt === 1 ? 'Checking the render browser…' : 'Repairing the render browser download…';
+		const r = await downloadBrowserInChild();
+		if (r.path && fs.existsSync(r.path)) return (browserChoice = {executable: r.path, chromeMode: 'headless-shell'});
+		downloadError = r.error || 'no browser after download';
+		console.error('Browser download failed:', downloadError);
+		// A folder without a working browser inside (interrupted download, antivirus
+		// quarantine…) makes Remotion skip the download forever. Clear it and retry.
+		try {
+			fs.rmSync(path.join(BROWSER_CACHE, 'chrome-headless-shell'), {recursive: true, force: true});
+		} catch (e) {
+			console.error('Could not clear the browser download folder:', e?.message || e);
+		}
+	}
+	const installed = (SYSTEM_BROWSERS[process.platform] || []).find((p) => p && fs.existsSync(p));
+	if (installed) {
+		console.log(`Using installed browser: ${installed}`);
+		return (browserChoice = {executable: installed, chromeMode: 'chrome-for-testing'});
+	}
+	throw new Error(
+		'Could not set up a browser for rendering. Check your internet connection, or install Google Chrome, then try again.' +
+			(downloadError ? ` (${downloadError})` : ''),
+	);
+};
 
 // ---------- rendering ----------
 let serveUrl = null;
@@ -49,11 +144,8 @@ const runQueue = async (categories) => {
 	job.running = true;
 	job.items = categories.map((c) => ({id: c.id, title: c.title, status: 'queued', progress: 0, file: null, error: null}));
 	try {
-		const {selectComposition, renderMedia, ensureBrowser} = await import('@remotion/renderer');
-		if (!BROWSER) {
-			job.message = 'Downloading render browser (first time only)…';
-			await ensureBrowser();
-		}
+		const {selectComposition, renderMedia} = await import('@remotion/renderer');
+		const browser = await resolveBrowser();
 		const url = await getServeUrl();
 		for (const [i, c] of categories.entries()) {
 			const item = job.items[i];
@@ -61,7 +153,13 @@ const runQueue = async (categories) => {
 			job.message = `Rendering ${c.title}`;
 			try {
 				const inputProps = {category: c, nomineeFrames: []};
-				const composition = await selectComposition({serveUrl: url, id: 'category', inputProps, browserExecutable: BROWSER});
+				const composition = await selectComposition({
+					serveUrl: url,
+					id: 'category',
+					inputProps,
+					browserExecutable: browser.executable,
+					chromeMode: browser.chromeMode,
+				});
 				const file = `${c.id}.mp4`;
 				await renderMedia({
 					serveUrl: url,
@@ -71,7 +169,8 @@ const runQueue = async (categories) => {
 					crf: 16,
 					imageFormat: 'jpeg',
 					outputLocation: path.join(OUT, file),
-					browserExecutable: BROWSER,
+					browserExecutable: browser.executable,
+					chromeMode: browser.chromeMode,
 					onProgress: ({progress}) => {
 						item.progress = progress;
 					},
@@ -87,8 +186,13 @@ const runQueue = async (categories) => {
 		}
 		job.message = 'Finished';
 	} catch (e) {
-		job.message = `Could not start rendering: ${String(e?.message || e).split('\n')[0]}`;
-		for (const it of job.items) if (it.status === 'queued') it.status = 'error';
+		const msg = String(e?.message || e).split('\n')[0];
+		job.message = `Could not start rendering: ${msg}`;
+		for (const it of job.items)
+			if (it.status === 'queued') {
+				it.status = 'error';
+				it.error = msg;
+			}
 		console.error(e);
 	} finally {
 		job.running = false;

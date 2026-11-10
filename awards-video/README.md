@@ -30,6 +30,11 @@ In the app:
 
 Everything saves automatically to `data/awards.json`, and your clips are copied into `public/clips/`. Nothing leaves your computer. The first render downloads a small browser that's used to draw the frames, so it takes a little longer.
 
+## If rendering fails
+
+- **"No browser found for rendering frames" or a browser error:** quit the app and start it again, then render. The app now clears a half-finished browser download, retries it, and if that still fails, uses Google Chrome or Microsoft Edge if one is installed. If it still fails, install Google Chrome, or delete the folder `node_modules/.remotion` and try again with a working internet connection.
+- **Windows antivirus** sometimes quarantines the downloaded render browser. Installing Google Chrome avoids needing it.
+
 ## Command line (optional)
 
 ```bash
