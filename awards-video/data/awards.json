@@ -1,0 +1,23 @@
+{
+	"categories": [
+		{
+			"id": "best-newcomer",
+			"title": "Best Newcomer",
+			"nominees": [
+				{"name": "Nominee One", "detail": "Marketing", "clip": "sample-1.mp4"},
+				{"name": "Nominee Two", "detail": "Engineering", "clip": "sample-2.mp4"},
+				{"name": "Nominee Three", "detail": "Customer Success", "clip": "sample-3.mp4"}
+			]
+		},
+		{
+			"id": "outstanding-leadership",
+			"title": "Outstanding Leadership",
+			"nominees": [
+				{"name": "Nominee One", "detail": "Operations"},
+				{"name": "Nominee Two", "detail": "Finance"},
+				{"name": "Nominee Three", "detail": "Design"},
+				{"name": "Nominee Four", "detail": "Sales"}
+			]
+		}
+	]
+}
