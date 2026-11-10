@@ -1,6 +1,6 @@
 import {staticFile} from 'remotion';
 import {getVideoMetadata} from '@remotion/media-utils';
-import {FPS, INTRO_SECONDS, LOOP_FRAMES, OUTRO_SECONDS, PLACEHOLDER_SECONDS, WINNER_END_SECONDS, WINNER_REVEAL_SECONDS} from './theme';
+import {FPS, INTRO_SECONDS, UP_NEXT_SECONDS, LOOP_FRAMES, OUTRO_SECONDS, PLACEHOLDER_SECONDS, WINNER_END_SECONDS, WINNER_REVEAL_SECONDS} from './theme';
 import type {Category, Nominee, Screen} from './types';
 
 /** Length of one clip segment in frames, from the clip itself. */
@@ -26,7 +26,14 @@ export const totalFrames = (nomineeFrames: number[]) =>
 export const winnerTotalFrames = (clip: number) => (WINNER_REVEAL_SECONDS + WINNER_END_SECONDS) * FPS + clip;
 
 export const screenFrames = (s: Screen) =>
-	s.type === 'countdown' ? Math.max(1, Math.round(s.minutes * 60)) * FPS + 3 * FPS : LOOP_FRAMES;
+	s.type === 'countdown'
+		? Math.max(1, Math.round(s.minutes * 60)) * FPS + 3 * FPS
+		: s.type === 'upnext'
+			? UP_NEXT_SECONDS * FPS
+			: LOOP_FRAMES;
+
+/** Loops repeat seamlessly; countdowns and "Up next" play once and hold. */
+export const screenLoops = (s: Screen) => s.type !== 'countdown' && s.type !== 'upnext';
 
 export const screenLabel = (s: Screen) =>
 	s.type === 'title'
@@ -35,4 +42,16 @@ export const screenLabel = (s: Screen) =>
 			? 'Background only'
 			: s.type === 'message'
 				? s.text || 'Message'
-				: `Countdown ${s.minutes} min`;
+				: s.type === 'countdown'
+					? `Countdown ${s.minutes} min`
+					: s.type === 'upnext'
+						? `Up next: ${s.category}`
+						: `Award in progress: ${s.category}`;
+
+/** The per-category extra screens. */
+export const upNextScreen = (c: Category): Screen => ({type: 'upnext', category: c.title, kicker: c.upNextKicker});
+export const onStageScreen = (c: Category): Screen => ({
+	type: 'onstage',
+	category: c.title,
+	winner: c.onStageShowWinner && c.winner ? {name: c.winner.name, detail: c.winner.detail} : undefined,
+});

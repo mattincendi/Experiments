@@ -1,6 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
 import {Backdrop} from './Backdrop';
+import {CategoryIntro} from './CategoryIntro';
 import {GoldText} from './GoldText';
 import {FONT, FPS, GOLD, GOLD_LIGHT, IVORY, LOOP_FRAMES} from './theme';
 import type {ScreenProps} from './types';
@@ -81,12 +82,27 @@ export const ScreenVideo: React.FC<ScreenProps> = ({screen, event}) => {
 	const frame = useCurrentFrame();
 	// Countdowns end by holding on 0:00; loops have no fades so they repeat seamlessly.
 	const textIn = screen.type === 'countdown' ? interpolate(frame, [0, 20], [0, 1], clamp) : 1;
+	if (screen.type === 'upnext') {
+		return (
+			<AbsoluteFill>
+				<Backdrop />
+				<CategoryIntro title={screen.category} kicker={screen.kicker || 'Up next'} fadeOut={false} />
+			</AbsoluteFill>
+		);
+	}
 	return (
 		<AbsoluteFill>
 			<Backdrop fadeIn={false} />
 			<AbsoluteFill style={{opacity: textIn}}>
 				{screen.type === 'title' ? <Headline title={event.title || 'Awards Night'} below={event.subtitle} /> : null}
 				{screen.type === 'message' ? <Headline title={screen.text} below={screen.subtext} above={event.title} /> : null}
+				{screen.type === 'onstage' ? (
+					screen.winner ? (
+						<Headline title={screen.winner.name} above={`Winner · ${screen.category}`} below={screen.winner.detail} />
+					) : (
+						<Headline title={screen.category} above={event.title} />
+					)
+				) : null}
 				{screen.type === 'countdown' ? <Countdown text={screen.text} minutes={screen.minutes} event={event.title} /> : null}
 			</AbsoluteFill>
 		</AbsoluteFill>

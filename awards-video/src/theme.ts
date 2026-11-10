@@ -26,6 +26,7 @@ export const OUTRO_SECONDS = 6;
 export const FADE_FRAMES = 15;
 export const PLACEHOLDER_SECONDS = 6;
 
+export const UP_NEXT_SECONDS = 8;
 export const WINNER_REVEAL_SECONDS = 6;
 export const WINNER_END_SECONDS = 6;
 

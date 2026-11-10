@@ -19,6 +19,10 @@ export type Category = {
 	nominees: Nominee[];
 	/** The winner's video, rendered as a separate file. */
 	winner?: Nominee;
+	/** Line above the title on the "Up next" card. */
+	upNextKicker?: string;
+	/** Show the winner's name on the "Award in progress" loop. */
+	onStageShowWinner?: boolean;
 };
 
 export type EventInfo = {title: string; subtitle?: string};
@@ -27,7 +31,11 @@ export type Screen =
 	| {type: 'title'}
 	| {type: 'background'}
 	| {type: 'message'; text: string; subtext?: string}
-	| {type: 'countdown'; text?: string; minutes: number};
+	| {type: 'countdown'; text?: string; minutes: number}
+	/** Per-category: short card before presenters walk on. */
+	| {type: 'upnext'; category: string; kicker?: string}
+	/** Per-category: seamless loop during the award / speech. */
+	| {type: 'onstage'; category: string; winner?: {name: string; detail?: string}};
 
 export type Project = {event: EventInfo; screens: Screen[]; categories: Category[]};
 

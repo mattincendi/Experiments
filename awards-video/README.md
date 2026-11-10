@@ -13,6 +13,9 @@ Pre-rendered awards-night videos in navy and gold, at 1920×1080. You make every
   2. The winner's (longer) clip with a "Winner · Category" lower-third.
   3. A closing name card that holds on the last frame.
 
+- **Up next** (`<category>-up-next.mp4`): an 8-second card ("Up next" and then the award name) for before the presenters walk on. It holds on its last frame.
+- **Award in progress** (`<category>-in-progress.mp4`): a 48-second seamless loop of the award name to leave on the LED wall during the award and speech. It can optionally show the winner's name.
+
 **LED wall screens** (`screen-*.mp4`)
 - **Title screen:** your event name and subtitle.
 - **Background only:** for behind presenters and speeches.
@@ -35,12 +38,12 @@ Keep the small terminal window open while you work. Close it to stop the app.
 
 In the app:
 - **LED wall screens** (top left): set the event name, then add, edit or remove screens.
-- **Categories** (left): add, select, reorder or delete them. Each has a **Nominees video** tab and a **Winner video** tab.
+- **Categories** (left): add, select, reorder or delete them. Each has a **Nominees video** tab, a **Winner video** tab and an **On the night** tab (Up next and Award in progress).
 - **Nominees**: type a name and an optional second line. Drop a video onto the box, or click it to choose a file. Optionally set a start time or a maximum length.
 - **Add several at once**: drop several clips onto the dashed area under the nominees and you get one nominee per clip, named after the file.
 - **Preview**: shows the finished video. It updates when you leave a text field or press Enter; Escape undoes what you typed.
 - **Winner**: on the Winner video tab, pick one of the nominees (or someone else), then drop in their longer clip.
-- **Render**: renders the video you're looking at. **Render everything** in the sidebar renders all nominee videos, winner videos and screens. Each one shows a progress bar, then **Watch** and **Download** links. Finished files are saved in the `out/` folder (**Open output folder**).
+- **Render**: renders the video you're looking at. **Render everything** in the sidebar renders every nominee, winner, Up next and Award in progress video plus all screens. Each one shows a progress bar, then **Watch** and **Download** links. Finished files are saved in the `out/` folder (**Open output folder**).
 
 Everything saves automatically to `data/awards.json`, and your clips are copied into `public/clips/`. Nothing leaves your computer. The first render downloads a small browser that's used to draw the frames, so it takes a little longer.
 

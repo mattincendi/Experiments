@@ -8,7 +8,7 @@ import './style.css';
 import {CategoryVideo} from '../../src/CategoryVideo';
 import {WinnerVideo} from '../../src/WinnerVideo';
 import {ScreenVideo} from '../../src/ScreenVideo';
-import {clipFrames, computeNomineeFrames, screenFrames, screenLabel, totalFrames, winnerTotalFrames} from '../../src/frames';
+import {clipFrames, computeNomineeFrames, onStageScreen, screenFrames, screenLabel, screenLoops, totalFrames, upNextScreen, winnerTotalFrames} from '../../src/frames';
 import {FPS, HEIGHT, WIDTH} from '../../src/theme';
 import type {Category, EventInfo, Nominee, Project, Screen} from '../../src/types';
 import {loadProject, openOutput, RenderJob, renderStatus, saveProject, startRender, uploadClip, VideoJob} from './api';
@@ -68,6 +68,8 @@ const move = <T,>(arr: T[], i: number, d: number) => {
 // Render jobs
 const categoryJob = (c: Category): VideoJob => ({file: `${c.id}.mp4`, title: c.title, composition: 'category', inputProps: {category: c, nomineeFrames: []}});
 const winnerJob = (c: Category): VideoJob => ({file: `${c.id}-winner.mp4`, title: `${c.title}: winner`, composition: 'winner', inputProps: {category: c, clipFrames: 1}});
+const upNextJob = (c: Category, event: EventInfo): VideoJob => ({file: `${c.id}-up-next.mp4`, title: `${c.title}: up next`, composition: 'screen', inputProps: {screen: upNextScreen(c), event}});
+const onStageJob = (c: Category, event: EventInfo): VideoJob => ({file: `${c.id}-in-progress.mp4`, title: `${c.title}: award in progress`, composition: 'screen', inputProps: {screen: onStageScreen(c), event}});
 const screenJob = (s: Screen, id: string, event: EventInfo): VideoJob => ({file: `${id}.mp4`, title: screenLabel(s), composition: 'screen', inputProps: {screen: s, event}});
 
 // ---------------------------------------------------------------- fields that commit when you leave them
@@ -132,7 +134,7 @@ const Preview: React.FC<{target: PreviewTarget}> = ({target}) => {
 	if (!data) return <div className="preview-wait">Loading preview…</div>;
 	const component = (target.kind === 'category' ? CategoryVideo : target.kind === 'winner' ? WinnerVideo : ScreenVideo) as React.FC<Record<string, unknown>>;
 	const seconds = Math.round(data.frames / FPS);
-	const loops = target.kind === 'screen' && target.screen.type !== 'countdown';
+	const loops = target.kind === 'screen' && screenLoops(target.screen);
 	return (
 		<>
 			<Player
@@ -319,6 +321,8 @@ const SCREEN_HELP: Record<Screen['type'], string> = {
 	background: 'Just the moving background, for behind presenters and speeches.',
 	message: 'Any text, e.g. Welcome, Intermission, Dinner is served.',
 	countdown: 'Counts down to the start, then holds on 0:00.',
+	upnext: '',
+	onstage: '',
 };
 
 const ScreensView: React.FC<{
@@ -439,14 +443,16 @@ const ScreensView: React.FC<{
 
 const CategoryView: React.FC<{
 	cat: Category;
+	event: EventInfo;
 	index: number;
 	count: number;
 	update: (fn: (p: Project) => Project) => void;
 	render: (jobs: (p: Project) => VideoJob[]) => void;
 	select: (i: number) => void;
 	job: RenderJob | null;
-}> = ({cat, index, count, update, render, select, job}) => {
-	const [tab, setTab] = useState<'nominees' | 'winner'>('nominees');
+}> = ({cat, event, index, count, update, render, select, job}) => {
+	const [tab, setTab] = useState<'nominees' | 'winner' | 'night'>('nominees');
+	const [nightSel, setNightSel] = useState<'upnext' | 'onstage'>('upnext');
 	const [bulkOver, setBulkOver] = useState(false);
 	const [bulkMsg, setBulkMsg] = useState<string | null>(null);
 	const updateCat = (fn: (c: Category) => Category) =>
@@ -467,7 +473,13 @@ const CategoryView: React.FC<{
 		updateCat((c) => ({...c, nominees: [...c.nominees, ...added]}));
 	};
 
-	const previewTarget = useMemo<PreviewTarget>(() => ({kind: tab === 'nominees' ? 'category' : 'winner', category: cat}), [tab, JSON.stringify(cat)]); // eslint-disable-line react-hooks/exhaustive-deps
+	const previewTarget = useMemo<PreviewTarget>(
+		() =>
+			tab === 'night'
+				? {kind: 'screen', screen: nightSel === 'upnext' ? upNextScreen(cat) : onStageScreen(cat), event}
+				: {kind: tab === 'nominees' ? 'category' : 'winner', category: cat},
+		[tab, nightSel, JSON.stringify(cat), JSON.stringify(event)], // eslint-disable-line react-hooks/exhaustive-deps
+	);
 
 	return (
 		<>
@@ -502,6 +514,9 @@ const CategoryView: React.FC<{
 				</button>
 				<button className={tab === 'winner' ? 'on' : ''} onClick={() => setTab('winner')}>
 					Winner video {cat.winner ? '' : <span className="muted">(not set)</span>}
+				</button>
+				<button className={tab === 'night' ? 'on' : ''} onClick={() => setTab('night')}>
+					On the night
 				</button>
 			</div>
 
@@ -556,6 +571,44 @@ const CategoryView: React.FC<{
 							<span className="muted">{bulkMsg ?? 'or drop several clips here to add one nominee per clip'}</span>
 						</div>
 					</section>
+				) : tab === 'night' ? (
+					<section className="nominees">
+						<p className="muted small" style={{marginTop: 0}}>
+							Extra screens for this award. Click one to preview it.
+						</p>
+						<div className={`screen-card ${nightSel === 'upnext' ? 'active' : ''}`} onClick={() => setNightSel('upnext')}>
+							<div className="screen-top">
+								<strong>Up next</strong>
+								<span className="muted small">8 sec, holds on the last frame</span>
+							</div>
+							<div className="muted small">Play it before the presenters walk on. The award name animates in and stays on screen. Saved as <code>{cat.id}-up-next.mp4</code>.</div>
+							<label>
+								Line above the name
+								<Field value={cat.upNextKicker} placeholder="Up next" onCommit={(v) => updateCat((c) => ({...c, upNextKicker: v || undefined}))} />
+							</label>
+						</div>
+						<div className={`screen-card ${nightSel === 'onstage' ? 'active' : ''}`} onClick={() => setNightSel('onstage')}>
+							<div className="screen-top">
+								<strong>Award in progress</strong>
+								<span className="muted small">48 sec seamless loop</span>
+							</div>
+							<div className="muted small">
+								Leave it on the LED wall during the award and the speech. Saved as <code>{cat.id}-in-progress.mp4</code>.
+							</div>
+							<label className="check" onClick={(e) => e.stopPropagation()}>
+								<input
+									type="checkbox"
+									checked={!!cat.onStageShowWinner}
+									disabled={!cat.winner}
+									onChange={(e) => {
+										updateCat((c) => ({...c, onStageShowWinner: e.target.checked}));
+										setNightSel('onstage');
+									}}
+								/>
+								Show the winner’s name {cat.winner ? `(${cat.winner.name})` : '(set a winner on the Winner video tab first)'}
+							</label>
+						</div>
+					</section>
 				) : (
 					<section className="nominees">
 						<p className="muted small" style={{marginTop: 0}}>
@@ -590,7 +643,20 @@ const CategoryView: React.FC<{
 				<section className="preview">
 					<div className="section-label">Preview</div>
 					{tab === 'winner' && !cat.winner ? <div className="preview-wait">Choose the winner to see the preview</div> : <Preview target={previewTarget} />}
-					{tab === 'nominees' ? (
+					{tab === 'night' ? (
+						<>
+							<button
+								className="primary wide"
+								disabled={job?.running}
+								onClick={() => render((p) => [nightSel === 'upnext' ? upNextJob(p.categories[index], p.event) : onStageJob(p.categories[index], p.event)])}
+							>
+								Render {nightSel === 'upnext' ? 'Up next' : 'Award in progress'}
+							</button>
+							<button className="wide" disabled={job?.running} onClick={() => render((p) => [upNextJob(p.categories[index], p.event), onStageJob(p.categories[index], p.event)])}>
+								Render both
+							</button>
+						</>
+					) : tab === 'nominees' ? (
 						<button className="primary wide" disabled={job?.running} onClick={() => render((p) => [categoryJob(p.categories[index])])}>
 							Render nominees: “{cat.title}”
 						</button>
@@ -706,6 +772,7 @@ const App: React.FC = () => {
 							render((p) => [
 								...p.categories.map(categoryJob),
 								...p.categories.filter((c) => c.winner).map(winnerJob),
+								...p.categories.flatMap((c) => [upNextJob(c, p.event), onStageJob(c, p.event)]),
 								...p.screens.map((s, i) => screenJob(s, screenIds(p.screens)[i], p.event)),
 							])
 						}
@@ -713,7 +780,7 @@ const App: React.FC = () => {
 						Render everything
 					</button>
 					<div className="muted small center">
-						{plural(cats.length, 'nominee video')}, {plural(winners, 'winner video')}, {plural(project.screens.length, 'screen')}
+						{plural(cats.length, 'nominee video')}, {plural(winners, 'winner video')}, {plural(cats.length * 2 + project.screens.length, 'screen')}
 					</div>
 					<div className={`save ${saved}`}>{saved === 'saved' ? 'All changes saved' : saved === 'saving' ? 'Saving…' : 'Could not save. Is the app still running?'}</div>
 				</div>
@@ -723,7 +790,7 @@ const App: React.FC = () => {
 				{view === 'screens' ? (
 					<ScreensView project={project} update={update} render={render} job={job} />
 				) : catIndex >= 0 ? (
-					<CategoryView key={catIndex} cat={cats[catIndex]} index={catIndex} count={cats.length} update={update} render={render} select={setView} job={job} />
+					<CategoryView key={catIndex} cat={cats[catIndex]} event={project.event} index={catIndex} count={cats.length} update={update} render={render} select={setView} job={job} />
 				) : (
 					<div className="empty">Add a category to get started.</div>
 				)}
