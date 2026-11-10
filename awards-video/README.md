@@ -11,44 +11,40 @@ The backdrop is a 3D space the scene floats in. About 1,100 gold, ivory and pale
 
 The font is **Jost**, a free geometric font close to Futura.
 
-## Setup
+## Using the app (easiest)
+
+1. Install **Node.js** (the LTS version) from nodejs.org. You only need to do this once.
+2. Double-click the launcher in this folder:
+   - **Mac:** `Start Awards.command`. If macOS says it can't be opened, right-click it, choose **Open**, then **Open** again.
+   - **Windows:** `Start Awards.bat`
+3. The first time, it installs itself, which takes a minute or two. Then the app opens in your browser at http://localhost:4321.
+
+Keep the small terminal window open while you work. Close it to stop the app.
+
+In the app:
+- **Categories** (left): add, select, reorder or delete them.
+- **Nominees**: type a name and an optional second line. Drop a video onto the box, or click it to choose a file. Optionally set a start time or a maximum length.
+- **Add several at once**: drop several clips onto the dashed area under the nominees and you get one nominee per clip, named after the file.
+- **Preview**: shows the finished category and updates as you type.
+- **Render**: renders this category, or use **Render all** in the sidebar. Each one shows a progress bar, then **Watch** and **Download** links. Finished files are saved in the `out/` folder (**Open output folder**).
+
+Everything saves automatically to `data/awards.json`, and your clips are copied into `public/clips/`. Nothing leaves your computer. The first render downloads a small browser that's used to draw the frames, so it takes a little longer.
+
+## Command line (optional)
 
 ```bash
-cd awards-video
 npm install
+npm start                # same app, without the launcher
+npm run studio           # Remotion Studio preview
+npm run render           # render every category in data/awards.json to out/
+node render-all.mjs best-newcomer
 ```
 
-## Add your nominees
-
-1. Put each nominee's clip in `public/clips/`. Use MP4 or MOV, ideally 1920×1080 so it fills the frame without cropping.
-2. Edit `data/awards.json`:
+`data/awards.json` can also be edited by hand:
 
 ```json
-{
-  "id": "best-newcomer",
-  "title": "Best Newcomer",
-  "nominees": [
-    {"name": "Jane Smith", "detail": "Marketing", "clip": "jane.mp4"}
-  ]
-}
-```
-
-Nominee options:
-- `detail`: the second line under the name. Optional.
-- `clip`: the file in `public/clips/`. Leave it out and a dashed placeholder appears instead.
-- `startAt`: the second to start the clip from. Optional.
-- `maxSeconds`: cuts a long clip short. Optional. Otherwise the clip plays at its full length.
-
-Category options:
-- `id`: lowercase letters, numbers and hyphens. It becomes the file name.
-- `kicker`: the small line above the title. The default is "The nominees for".
-
-## Preview and render
-
-```bash
-npm run studio          # live preview in the browser and scrub through it
-npm run render          # render every category to out/<id>.mp4
-node render-all.mjs best-newcomer   # render one category
+{"id": "best-newcomer", "title": "Best Newcomer", "kicker": "The nominees for",
+ "nominees": [{"name": "Jane Smith", "detail": "Marketing", "clip": "jane.mp4", "startAt": 0, "maxSeconds": 10}]}
 ```
 
 ## Intro music
