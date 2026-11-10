@@ -17,10 +17,19 @@ export const goldGradient = (sweep: number) =>
 	`linear-gradient(100deg, ${GOLD_DARK} 0%, ${GOLD} 25%, ${GOLD_LIGHT} 45%, ${GOLD} 60%, ${GOLD_DARK} 100%),
 	 linear-gradient(100deg, transparent ${sweep - 12}%, rgba(255,250,230,0.95) ${sweep}%, transparent ${sweep + 12}%)`;
 
+/** The background repeats exactly every LOOP_FRAMES, so loops are seamless. */
+export const LOOP_FRAMES = 48 * FPS;
+
 export const INTRO_SECONDS = 7;
+/** Award title card at the end of each category video (holds on the last frame). */
+export const OUTRO_SECONDS = 6;
 export const FADE_FRAMES = 15;
-/** Intro music in public/. Set to null for none. */
-export const INTRO_MUSIC: string | null = 'music/intro.m4a';
-export const INTRO_MUSIC_VOLUME = 0.9;
-export const OUTRO_FRAMES = 30;
 export const PLACEHOLDER_SECONDS = 6;
+
+export const WINNER_REVEAL_SECONDS = 6;
+export const WINNER_END_SECONDS = 6;
+
+/** Music in public/. Set to null for none. */
+export const INTRO_MUSIC: string | null = 'music/intro.m4a';
+export const WINNER_MUSIC: string | null = 'music/winner.m4a';
+export const MUSIC_VOLUME = 0.9;

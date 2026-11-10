@@ -1,6 +1,6 @@
 import React, {useLayoutEffect, useRef} from 'react';
 import {AbsoluteFill, interpolate, random, useCurrentFrame} from 'remotion';
-import {HEIGHT, NAVY, NAVY_DEEP, NAVY_LIGHT, WIDTH} from './theme';
+import {HEIGHT, LOOP_FRAMES, NAVY, NAVY_DEEP, NAVY_LIGHT, WIDTH} from './theme';
 
 /**
  * A volume of space the scene floats in. Every particle has a real 3D
@@ -14,9 +14,13 @@ const NEAR = 0.35;
 const FAR = 9;
 const FOCUS = 2.6; // depth that is pin-sharp
 const APERTURE = 26; // how quickly things blur away from FOCUS
-const SPEED = 0.006; // camera forward speed, world units / frame
+// The camera travels exactly one depth span per loop, and every sway and
+// twinkle completes whole cycles, so frame LOOP_FRAMES looks like frame 0.
+const SPEED = (FAR - NEAR) / LOOP_FRAMES; // world units / frame
+const TAU = Math.PI * 2;
+const cyc = (frame: number, cycles: number) => (TAU * cycles * frame) / LOOP_FRAMES;
 
-type P = {x: number; y: number; z: number; size: number; rgb: string; a: number; tw: number};
+type P = {x: number; y: number; z: number; size: number; rgb: string; a: number; tw: number; tc: number};
 
 const COLORS = ['243,220,149', '255,244,214', '201,162,74', '170,195,240'];
 
@@ -29,7 +33,8 @@ const PARTICLES: P[] = new Array(1100).fill(0).map((_, i) => {
 		size: 0.008 + r('s') ** 3 * 0.035,
 		rgb: COLORS[r('c') < 0.45 ? 0 : r('c') < 0.7 ? 1 : r('c') < 0.88 ? 2 : 3],
 		a: 0.45 + r('a') * 0.55,
-		tw: r('t') * 100,
+		tw: r('t') * TAU,
+		tc: 20 + Math.floor(r('tc') * 40), // twinkle cycles per loop
 	};
 });
 
@@ -47,15 +52,15 @@ const wrapZ = (z: number) => {
 const draw = (ctx: CanvasRenderingContext2D, frame: number, fade: number) => {
 	ctx.clearRect(0, 0, WIDTH, HEIGHT);
 	const camZ = frame * SPEED;
-	const camX = Math.sin(frame / 260) * 0.35;
-	const camY = Math.cos(frame / 330) * 0.16;
+	const camX = Math.sin(cyc(frame, 1)) * 0.35;
+	const camY = Math.sin(cyc(frame, 2) + 1) * 0.16;
 	const cx = WIDTH / 2;
 	const cy = HEIGHT / 2;
 
 	ctx.globalCompositeOperation = 'lighter';
 
 	for (const h of HAZE) {
-		const z = wrapZ(h.z - camZ * 0.6);
+		const z = wrapZ(h.z - camZ);
 		const sx = cx + ((h.x - camX) / z) * FOCAL;
 		const sy = cy + ((h.y - camY) / z) * FOCAL;
 		const rad = (h.size / z) * FOCAL;
@@ -81,7 +86,7 @@ const draw = (ctx: CanvasRenderingContext2D, frame: number, fade: number) => {
 		const fog = Math.exp(-(z - NEAR) / 6);
 		const edge = Math.max(0, Math.min(1, (z - NEAR) / 0.4, (FAR - z) / 1.2));
 		const spread = Math.min(1, (core / rad) ** 2 * 2.2 + 0.09);
-		const twinkle = 0.75 + 0.25 * Math.sin(frame / 22 + p.tw);
+		const twinkle = 0.75 + 0.25 * Math.sin(cyc(frame, p.tc) + p.tw);
 		const alpha = p.a * fog * edge * spread * twinkle * fade;
 		if (alpha < 0.004) continue;
 
@@ -104,10 +109,11 @@ const draw = (ctx: CanvasRenderingContext2D, frame: number, fade: number) => {
 	ctx.globalCompositeOperation = 'source-over';
 };
 
-export const Backdrop: React.FC<{glow?: number}> = ({glow = 1}) => {
+/** fadeIn: fade up from black at the start (off for seamless loops). */
+export const Backdrop: React.FC<{glow?: number; fadeIn?: boolean}> = ({glow = 1, fadeIn = true}) => {
 	const frame = useCurrentFrame();
 	const ref = useRef<HTMLCanvasElement>(null);
-	const fade = interpolate(frame, [0, 30], [0, 1], {extrapolateRight: 'clamp'});
+	const fade = fadeIn ? interpolate(frame, [0, 30], [0, 1], {extrapolateRight: 'clamp'}) : 1;
 
 	useLayoutEffect(() => {
 		const ctx = ref.current?.getContext('2d');
@@ -119,7 +125,7 @@ export const Backdrop: React.FC<{glow?: number}> = ({glow = 1}) => {
 			<AbsoluteFill
 				style={{
 					background: `radial-gradient(ellipse 60% 55% at 50% 45%, ${NAVY_LIGHT} 0%, ${NAVY} 45%, ${NAVY_DEEP} 100%)`,
-					opacity: glow * (0.88 + 0.12 * Math.sin(frame / 45)),
+					opacity: glow * (0.88 + 0.12 * Math.sin(cyc(frame, 5))),
 				}}
 			/>
 			<canvas ref={ref} width={WIDTH} height={HEIGHT} style={{position: 'absolute', inset: 0}} />

@@ -1,22 +1,78 @@
 {
+	"event": {
+		"title": "Awards Night",
+		"subtitle": "2026"
+	},
+	"screens": [
+		{
+			"type": "title"
+		},
+		{
+			"type": "background"
+		},
+		{
+			"type": "message",
+			"text": "Welcome",
+			"subtext": "Please take your seats"
+		},
+		{
+			"type": "message",
+			"text": "Intermission",
+			"subtext": "We'll be back shortly"
+		},
+		{
+			"type": "countdown",
+			"text": "The ceremony begins in",
+			"minutes": 5
+		}
+	],
 	"categories": [
 		{
 			"id": "best-newcomer",
 			"title": "Best Newcomer",
 			"nominees": [
-				{"name": "Nominee One", "detail": "Marketing", "clip": "sample-1.mp4"},
-				{"name": "Nominee Two", "detail": "Engineering", "clip": "sample-2.mp4"},
-				{"name": "Nominee Three", "detail": "Customer Success", "clip": "sample-3.mp4"}
-			]
+				{
+					"name": "Nominee One",
+					"detail": "Marketing",
+					"clip": "sample-1.mp4"
+				},
+				{
+					"name": "Nominee Two",
+					"detail": "Engineering",
+					"clip": "sample-2.mp4"
+				},
+				{
+					"name": "Nominee Three",
+					"detail": "Customer Success",
+					"clip": "sample-3.mp4"
+				}
+			],
+			"winner": {
+				"name": "Nominee Two",
+				"detail": "Engineering",
+				"clip": "sample-2.mp4"
+			}
 		},
 		{
 			"id": "outstanding-leadership",
 			"title": "Outstanding Leadership",
 			"nominees": [
-				{"name": "Nominee One", "detail": "Operations"},
-				{"name": "Nominee Two", "detail": "Finance"},
-				{"name": "Nominee Three", "detail": "Design"},
-				{"name": "Nominee Four", "detail": "Sales"}
+				{
+					"name": "Nominee One",
+					"detail": "Operations"
+				},
+				{
+					"name": "Nominee Two",
+					"detail": "Finance"
+				},
+				{
+					"name": "Nominee Three",
+					"detail": "Design"
+				},
+				{
+					"name": "Nominee Four",
+					"detail": "Sales"
+				}
 			]
 		}
 	]

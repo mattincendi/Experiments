@@ -38,7 +38,8 @@ const Diamond: React.FC<{y: number; o: number}> = ({y, o}) => (
 	/>
 );
 
-export const CategoryIntro: React.FC<{title: string; kicker: string}> = ({title, kicker}) => {
+/** The award title card. Used as the intro, and again (fadeOut=false) as the closing hold. */
+export const CategoryIntro: React.FC<{title: string; kicker: string; fadeOut?: boolean}> = ({title, kicker, fadeOut = true}) => {
 	const frame = useCurrentFrame();
 	const {durationInFrames} = useVideoConfig();
 
@@ -47,7 +48,7 @@ export const CategoryIntro: React.FC<{title: string; kicker: string}> = ({title,
 	const kickerIn = interpolate(frame, [35, 70], [0, 1], {...clamp, easing: ease});
 	const titleIn = interpolate(frame, [50, 95], [0, 1], {...clamp, easing: ease});
 	const sweep = interpolate(frame, [95, 150], [-20, 120], clamp);
-	const out = interpolate(frame, [durationInFrames - 20, durationInFrames], [1, 0], clamp);
+	const out = fadeOut ? interpolate(frame, [durationInFrames - 20, durationInFrames], [1, 0], clamp) : 1;
 	const drift = interpolate(frame, [0, durationInFrames], [1, 1.04]);
 
 	const size = title.length > 22 ? 88 : title.length > 14 ? 104 : 124;

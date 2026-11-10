@@ -1,6 +1,7 @@
-import type {Category} from '../../src/types';
+import type {Project} from '../../src/types';
 
-export type Project = {categories: Category[]};
+export type {Project};
+export type VideoJob = {file: string; title: string; composition: 'category' | 'winner' | 'screen'; inputProps: Record<string, unknown>};
 export type RenderItem = {id: string; title: string; status: 'queued' | 'rendering' | 'done' | 'error'; progress: number; file: string | null; error: string | null};
 export type RenderJob = {running: boolean; items: RenderItem[]; message: string};
 
@@ -12,8 +13,8 @@ const json = async <T,>(r: Response): Promise<T> => {
 export const loadProject = () => fetch('/api/project').then((r) => json<Project>(r));
 export const saveProject = (p: Project) =>
 	fetch('/api/project', {method: 'PUT', body: JSON.stringify(p)}).then((r) => json<{ok: true}>(r));
-export const startRender = (categories: Category[]) =>
-	fetch('/api/render', {method: 'POST', body: JSON.stringify({categories})}).then((r) => json<{ok: true}>(r));
+export const startRender = (videos: VideoJob[]) =>
+	fetch('/api/render', {method: 'POST', body: JSON.stringify({videos})}).then((r) => json<{ok: true}>(r));
 export const renderStatus = () => fetch('/api/render').then((r) => json<RenderJob>(r));
 export const openOutput = () => fetch('/api/open-output', {method: 'POST'});
 

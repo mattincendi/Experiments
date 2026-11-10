@@ -1,6 +1,8 @@
-"""Synthesises the original intro fanfare -> public/music/intro.m4a.
-Needs numpy, scipy and ffmpeg. Replace the output with any track you like."""
-import os, subprocess, tempfile, numpy as np
+"""Synthesises the original fanfares. Needs numpy, scipy and ffmpeg.
+    python tools/make-intro-music.py              -> public/music/intro.m4a  (D major)
+    python tools/make-intro-music.py winner 5     -> public/music/winner.m4a (a fourth higher)
+Replace the outputs with any tracks you like."""
+import os, sys, subprocess, tempfile, numpy as np
 from scipy.signal import butter, sosfilt, fftconvolve
 from scipy.io import wavfile
 
@@ -11,7 +13,9 @@ t = np.arange(int(SR * DUR)) / SR
 rng = np.random.default_rng(7)
 L = np.zeros_like(t); R = np.zeros_like(t)
 
-def hz(n): return 440 * 2 ** ((n - 69) / 12)
+NAME = sys.argv[1] if len(sys.argv) > 1 else 'intro'
+TRANSPOSE = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+def hz(n): return 440 * 2 ** ((n + TRANSPOSE - 69) / 12)
 def lp(x, f): return sosfilt(butter(2, f, 'low', fs=SR, output='sos'), x)
 def hp(x, f): return sosfilt(butter(2, f, 'high', fs=SR, output='sos'), x)
 def env(a, peak, hold, rel):
@@ -81,5 +85,5 @@ mix = np.tanh(mix / np.abs(mix).max() * 1.4) * 0.85
 tmp = os.path.join(tempfile.mkdtemp(), 'intro.wav')
 wavfile.write(tmp, SR, (mix * 32767).astype(np.int16))
 subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', tmp, '-c:a', 'aac', '-b:a', '256k',
-                'public/music/intro.m4a'], check=True)
-print('wrote public/music/intro.m4a')
+                f'public/music/{NAME}.m4a'], check=True)
+print(f'wrote public/music/{NAME}.m4a')

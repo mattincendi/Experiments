@@ -137,30 +137,31 @@ const getServeUrl = async () => {
 	return serveUrl;
 };
 
-/** One render job at a time; each item is a category. */
+/** One render queue at a time; each item is one video: {file, title, composition, inputProps}. */
 const job = {running: false, items: [], message: ''};
+const COMPOSITIONS = new Set(['category', 'winner', 'screen']);
 
-const runQueue = async (categories) => {
+const runQueue = async (videos) => {
 	job.running = true;
-	job.items = categories.map((c) => ({id: c.id, title: c.title, status: 'queued', progress: 0, file: null, error: null}));
+	job.items = videos.map((v) => ({id: v.file, title: v.title, status: 'queued', progress: 0, file: null, error: null}));
 	try {
 		const {selectComposition, renderMedia} = await import('@remotion/renderer');
 		const browser = await resolveBrowser();
 		const url = await getServeUrl();
-		for (const [i, c] of categories.entries()) {
+		for (const [i, v] of videos.entries()) {
 			const item = job.items[i];
 			item.status = 'rendering';
-			job.message = `Rendering ${c.title}`;
+			job.message = `Rendering ${v.title}`;
 			try {
-				const inputProps = {category: c, nomineeFrames: []};
+				const inputProps = v.inputProps;
 				const composition = await selectComposition({
 					serveUrl: url,
-					id: 'category',
+					id: v.composition,
 					inputProps,
 					browserExecutable: browser.executable,
 					chromeMode: browser.chromeMode,
 				});
-				const file = `${c.id}.mp4`;
+				const file = v.file;
 				await renderMedia({
 					serveUrl: url,
 					composition,
@@ -284,7 +285,7 @@ const openPath = (p) => {
 	} catch {}
 };
 
-const validId = (id) => typeof id === 'string' && /^[a-z0-9-]+$/.test(id);
+const validFile = (f) => typeof f === 'string' && /^[a-z0-9-]+\.mp4$/.test(f);
 
 // ---------- server ----------
 const server = http.createServer(async (req, res) => {
@@ -323,10 +324,13 @@ const server = http.createServer(async (req, res) => {
 		}
 		if (p === '/api/render' && req.method === 'POST') {
 			if (job.running) return sendJson(res, 409, {error: 'A render is already running'});
-			const {categories} = JSON.parse(await readBody(req));
-			if (!Array.isArray(categories) || !categories.length || !categories.every((c) => validId(c.id)))
-				return sendJson(res, 400, {error: 'Nothing to render'});
-			runQueue(categories);
+			const {videos} = JSON.parse(await readBody(req));
+			const ok =
+				Array.isArray(videos) &&
+				videos.length &&
+				videos.every((v) => validFile(v.file) && COMPOSITIONS.has(v.composition) && v.inputProps && typeof v.title === 'string');
+			if (!ok) return sendJson(res, 400, {error: 'Nothing to render'});
+			runQueue(videos);
 			return sendJson(res, 200, {ok: true});
 		}
 		if (p === '/api/render' && req.method === 'GET') return sendJson(res, 200, job);

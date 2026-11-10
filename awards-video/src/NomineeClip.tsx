@@ -50,7 +50,8 @@ const Placeholder: React.FC<{name: string}> = ({name}) => (
 	</AbsoluteFill>
 );
 
-export const NomineeClip: React.FC<{nominee: Nominee}> = ({nominee}) => {
+/** label: optional small gold line above the name, e.g. "Winner · Best Newcomer". */
+export const NomineeClip: React.FC<{nominee: Nominee; label?: string}> = ({nominee, label}) => {
 	const frame = useCurrentFrame();
 	const {durationInFrames, fps} = useVideoConfig();
 
@@ -114,6 +115,23 @@ export const NomineeClip: React.FC<{nominee: Nominee}> = ({nominee}) => {
 						boxShadow: '0 0 10px rgba(243,220,149,0.5)',
 					}}
 				/>
+				{label ? (
+					<div
+						style={{
+							fontFamily: FONT,
+							fontWeight: 500,
+							fontSize: 26,
+							letterSpacing: '0.4em',
+							textTransform: 'uppercase',
+							color: GOLD_LIGHT,
+							marginBottom: 10,
+							opacity: nameIn,
+							textShadow: '0 2px 8px rgba(0,0,0,0.7)',
+						}}
+					>
+						{label}
+					</div>
+				) : null}
 				<GoldText
 					size={nominee.name.length > 24 ? 60 : 76}
 					sweep={sweep}
