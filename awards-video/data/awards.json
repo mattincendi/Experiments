@@ -8,6 +8,11 @@
 			"type": "title"
 		},
 		{
+			"type": "header",
+			"title": "Community Awards",
+			"kicker": "Part two"
+		},
+		{
 			"type": "background"
 		},
 		{
@@ -24,6 +29,23 @@
 			"type": "countdown",
 			"text": "The ceremony begins in",
 			"minutes": 5
+		},
+		{
+			"type": "info",
+			"title": "Wi-Fi",
+			"lines": [
+				{
+					"label": "Network",
+					"value": "Venue_Guest"
+				},
+				{
+					"label": "Password",
+					"value": "change-me"
+				}
+			]
+		},
+		{
+			"type": "recap"
 		}
 	],
 	"categories": [
@@ -72,6 +94,26 @@
 				{
 					"name": "Nominee Four",
 					"detail": "Sales"
+				}
+			]
+		}
+	],
+	"minorAwards": [
+		{
+			"id": "minor-team-spirit-award",
+			"title": "Team Spirit Award",
+			"nominees": [
+				{
+					"name": "Alex Morgan",
+					"detail": "Sales"
+				},
+				{
+					"name": "Sam Lee",
+					"detail": "Design"
+				},
+				{
+					"name": "Chris Park",
+					"detail": "Finance"
 				}
 			]
 		}

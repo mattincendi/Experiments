@@ -27,6 +27,9 @@ export const FADE_FRAMES = 15;
 export const PLACEHOLDER_SECONDS = 6;
 
 export const UP_NEXT_SECONDS = 8;
+export const MINOR_SECONDS = 12;
+/** Shortest time each winner is shown in the recap loop. */
+export const RECAP_MIN_SECONDS = 6;
 export const WINNER_REVEAL_SECONDS = 6;
 export const WINNER_END_SECONDS = 6;
 

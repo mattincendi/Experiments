@@ -8,12 +8,13 @@ import './style.css';
 import {CategoryVideo} from '../../src/CategoryVideo';
 import {WinnerVideo} from '../../src/WinnerVideo';
 import {ScreenVideo} from '../../src/ScreenVideo';
-import {clipFrames, computeNomineeFrames, onStageScreen, screenFrames, screenLabel, screenLoops, totalFrames, upNextScreen, winnerTotalFrames} from '../../src/frames';
+import {clipFrames, computeNomineeFrames, expandScreen, onStageScreen, screenFrames, screenLabel, screenLoops, totalFrames, upNextScreen, winnerTotalFrames} from '../../src/frames';
 import {FPS, HEIGHT, WIDTH} from '../../src/theme';
-import type {Category, EventInfo, Nominee, Project, Screen} from '../../src/types';
+import type {Category, EventInfo, MinorAward, MinorNominee, Nominee, Project, Screen} from '../../src/types';
 import {loadProject, openOutput, RenderJob, renderStatus, saveProject, startRender, uploadClip, VideoJob} from './api';
 
 const VIDEO_EXT = /\.(mp4|mov|m4v|webm)$/i;
+const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
 
 const slug = (s: string) =>
 	s
@@ -32,6 +33,16 @@ const withIds = (cats: Category[]): Category[] => {
 	});
 };
 
+const minorWithIds = (list: MinorAward[]): MinorAward[] => {
+	const used = new Set<string>();
+	return list.map((m) => {
+		let id = `minor-${slug(m.title)}`;
+		for (let i = 2; used.has(id); i++) id = `minor-${slug(m.title)}-${i}`;
+		used.add(id);
+		return {...m, id};
+	});
+};
+
 const screenIds = (screens: Screen[]) => {
 	const used = new Set<string>();
 	return screens.map((s) => {
@@ -47,6 +58,7 @@ const normalize = (p: Partial<Project>): Project => ({
 	event: p.event ?? {title: 'Awards Night', subtitle: ''},
 	screens: p.screens ?? [{type: 'title'}, {type: 'background'}],
 	categories: withIds(p.categories ?? []),
+	minorAwards: minorWithIds(p.minorAwards ?? []),
 });
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -70,7 +82,13 @@ const categoryJob = (c: Category): VideoJob => ({file: `${c.id}.mp4`, title: c.t
 const winnerJob = (c: Category): VideoJob => ({file: `${c.id}-winner.mp4`, title: `${c.title}: winner`, composition: 'winner', inputProps: {category: c, clipFrames: 1}});
 const upNextJob = (c: Category, event: EventInfo): VideoJob => ({file: `${c.id}-up-next.mp4`, title: `${c.title}: up next`, composition: 'screen', inputProps: {screen: upNextScreen(c), event}});
 const onStageJob = (c: Category, event: EventInfo): VideoJob => ({file: `${c.id}-in-progress.mp4`, title: `${c.title}: award in progress`, composition: 'screen', inputProps: {screen: onStageScreen(c), event}});
-const screenJob = (s: Screen, id: string, event: EventInfo): VideoJob => ({file: `${id}.mp4`, title: screenLabel(s), composition: 'screen', inputProps: {screen: s, event}});
+const screenJob = (s: Screen, id: string, p: Project): VideoJob => ({
+	file: `${id}.mp4`,
+	title: screenLabel(s),
+	composition: 'screen',
+	inputProps: {screen: expandScreen(s, p), event: p.event},
+});
+const minorJob = (m: MinorAward, event: EventInfo): VideoJob => ({file: `${m.id}.mp4`, title: `Minor award: ${m.title}`, composition: 'screen', inputProps: {screen: {type: 'minor', award: m}, event}});
 
 // ---------------------------------------------------------------- fields that commit when you leave them
 
@@ -323,6 +341,10 @@ const SCREEN_HELP: Record<Screen['type'], string> = {
 	countdown: 'Counts down to the start, then holds on 0:00.',
 	upnext: '',
 	onstage: '',
+	header: 'A quieter title for sections: small line above, smaller title.',
+	info: 'Wi-Fi details, a hashtag, etc. Values are shown exactly as typed.',
+	recap: 'Cycles through every winner you have set on the Winner video tabs.',
+	minor: '',
 };
 
 const ScreensView: React.FC<{
@@ -396,6 +418,44 @@ const ScreensView: React.FC<{
 									</label>
 								</div>
 							) : null}
+							{s.type === 'header' ? (
+								<div className="trim">
+									<label>
+										Small line above
+										<Field value={s.kicker} placeholder="e.g. Part two" onCommit={(v) => setScreen(i, {...s, kicker: v || undefined})} />
+									</label>
+									<label>
+										Title
+										<Field value={s.title} onCommit={(v) => setScreen(i, {...s, title: v})} />
+									</label>
+								</div>
+							) : null}
+							{s.type === 'info' ? (
+								<div className="info-edit">
+									<label>
+										Title
+										<Field value={s.title} onCommit={(v) => setScreen(i, {...s, title: v})} />
+									</label>
+									{s.lines.map((l, k) => (
+										<div key={k} className="info-line">
+											<Field value={l.label} placeholder="Label, e.g. Network" onCommit={(v) => setScreen(i, {...s, lines: s.lines.map((x, j) => (j === k ? {...x, label: v} : x))})} />
+											<Field value={l.value} placeholder="Value, exactly as it should appear" onCommit={(v) => setScreen(i, {...s, lines: s.lines.map((x, j) => (j === k ? {...x, value: v} : x))})} />
+											<button className="danger" title="Remove line" onClick={(e) => (e.stopPropagation(), setScreen(i, {...s, lines: s.lines.filter((_, j) => j !== k)}))}>
+												✕
+											</button>
+										</div>
+									))}
+									{s.lines.length < 4 ? (
+										<button onClick={(e) => (e.stopPropagation(), setScreen(i, {...s, lines: [...s.lines, {label: '', value: ''}]}))}>+ Add line</button>
+									) : null}
+								</div>
+							) : null}
+							{s.type === 'recap' ? (
+								<label>
+									Heading
+									<Field value={s.title} placeholder="Tonight’s winners" onCommit={(v) => setScreen(i, {...s, title: v || undefined})} />
+								</label>
+							) : null}
 							{s.type === 'countdown' ? (
 								<div className="trim">
 									<label>
@@ -414,19 +474,22 @@ const ScreensView: React.FC<{
 						<span className="muted">Add:</span>
 						<button onClick={() => add({type: 'message', text: 'Welcome', subtext: 'Please take your seats'})}>Message</button>
 						<button onClick={() => add({type: 'countdown', text: 'The ceremony begins in', minutes: 5})}>Countdown</button>
+						<button onClick={() => add({type: 'header', title: 'Section title', kicker: 'Part one'})}>Header</button>
+						<button onClick={() => add({type: 'info', title: 'Wi-Fi', lines: [{label: 'Network', value: ''}, {label: 'Password', value: ''}]})}>Info / Wi-Fi</button>
+						<button onClick={() => add({type: 'recap'})}>Winners recap</button>
 						<button onClick={() => add({type: 'title'})}>Title screen</button>
 						<button onClick={() => add({type: 'background'})}>Background</button>
 					</div>
 				</section>
 				<section className="preview">
 					<div className="section-label">Preview</div>
-					{cur ? <Preview target={{kind: 'screen', screen: cur, event}} /> : <div className="preview-wait">Add a screen</div>}
+					{cur ? <Preview target={{kind: 'screen', screen: expandScreen(cur, project), event}} /> : <div className="preview-wait">Add a screen</div>}
 					{cur ? (
-						<button className="primary wide" disabled={job?.running} onClick={() => render((p) => [screenJob(p.screens[sel], screenIds(p.screens)[sel], p.event)])}>
+						<button className="primary wide" disabled={job?.running} onClick={() => render((p) => [screenJob(p.screens[sel], screenIds(p.screens)[sel], p)])}>
 							Render “{screenLabel(cur)}”
 						</button>
 					) : null}
-					<button className="wide" disabled={job?.running || !screens.length} onClick={() => render((p) => p.screens.map((s, i) => screenJob(s, screenIds(p.screens)[i], p.event)))}>
+					<button className="wide" disabled={job?.running || !screens.length} onClick={() => render((p) => p.screens.map((s, i) => screenJob(s, screenIds(p.screens)[i], p)))}>
 						Render all screens ({screens.length})
 					</button>
 					<div className="muted small" style={{marginTop: 8}}>
@@ -672,11 +735,136 @@ const CategoryView: React.FC<{
 	);
 };
 
+// ---------------------------------------------------------------- minor awards
+
+const PhotoDrop: React.FC<{photo?: string; onPhoto: (f: string | undefined) => void}> = ({photo, onPhoto}) => {
+	const input = useRef<HTMLInputElement>(null);
+	const [busy, setBusy] = useState(false);
+	const [over, setOver] = useState(false);
+	const take = async (f: File) => {
+		if (!IMAGE_EXT.test(f.name)) return alert('Please use a JPG, PNG or WebP photo.');
+		setBusy(true);
+		try {
+			onPhoto(await uploadClip(f, () => {}));
+		} finally {
+			setBusy(false);
+		}
+	};
+	return (
+		<div
+			className={`photo-drop ${over ? 'over' : ''}`}
+			title="Drop a photo, or click to choose"
+			onClick={() => input.current?.click()}
+			onDragOver={(e) => (e.preventDefault(), setOver(true))}
+			onDragLeave={() => setOver(false)}
+			onDrop={(e) => {
+				e.preventDefault();
+				setOver(false);
+				const f = e.dataTransfer.files[0];
+				if (f) take(f);
+			}}
+		>
+			<input ref={input} type="file" accept="image/*" hidden onChange={(e) => (e.target.files?.[0] && take(e.target.files[0]), (e.target.value = ''))} />
+			{busy ? <span>…</span> : photo ? <img src={`/clips/${photo}`} alt="" /> : <span>+ Photo</span>}
+			{photo && !busy ? (
+				<button className="photo-x" title="Remove photo" onClick={(e) => (e.stopPropagation(), onPhoto(undefined))}>
+					✕
+				</button>
+			) : null}
+		</div>
+	);
+};
+
+const MinorView: React.FC<{
+	award: MinorAward;
+	index: number;
+	project: Project;
+	update: (fn: (p: Project) => Project) => void;
+	render: (jobs: (p: Project) => VideoJob[]) => void;
+	select: (i: number | null) => void;
+	job: RenderJob | null;
+}> = ({award, index, project, update, render, select, job}) => {
+	const list = project.minorAwards ?? [];
+	const set = (fn: (m: MinorAward) => MinorAward) =>
+		update((p) => ({...p, minorAwards: minorWithIds((p.minorAwards ?? []).map((m, i) => (i === index ? fn(m) : m)))}));
+	const setN = (k: number, n: MinorNominee) => set((m) => ({...m, nominees: m.nominees.map((x, j) => (j === k ? n : x))}));
+	const target = useMemo<PreviewTarget>(() => ({kind: 'screen', screen: {type: 'minor', award}, event: project.event}), [JSON.stringify(award)]); // eslint-disable-line react-hooks/exhaustive-deps
+	return (
+		<>
+			<div className="cat-head">
+				<label className="grow">
+					Minor award name
+					<Field className="big" value={award.title} onCommit={(v) => set((m) => ({...m, title: v}))} />
+				</label>
+				<label>
+					Line above the name
+					<Field value={award.kicker} placeholder="The nominees for" onCommit={(v) => set((m) => ({...m, kicker: v || undefined}))} />
+				</label>
+				<div className="cat-actions">
+					<button
+						className="danger"
+						onClick={() => {
+							if (!confirm(`Delete the minor award "${award.title}"?`)) return;
+							update((p) => ({...p, minorAwards: minorWithIds((p.minorAwards ?? []).filter((_, i) => i !== index))}));
+							select(list.length > 1 ? Math.max(0, index - 1) : null);
+						}}
+					>
+						Delete
+					</button>
+				</div>
+			</div>
+			<div className="columns">
+				<section>
+					<div className="section-label">Nominees (up to 8)</div>
+					<p className="muted small" style={{marginTop: 0}}>
+						One card with the title and every nominee. Photos are optional: if only some nominees have one, the others get a gold monogram.
+					</p>
+					{award.nominees.map((n, k) => (
+						<div key={k} className="minor-row">
+							<PhotoDrop photo={n.photo} onPhoto={(f) => setN(k, {...n, photo: f})} />
+							<Field value={n.name} placeholder="Name" onCommit={(v) => setN(k, {...n, name: v})} />
+							<Field value={n.detail} placeholder="Second line (optional)" onCommit={(v) => setN(k, {...n, detail: v || undefined})} />
+							<span className="row-actions inline">
+								<button title="Move up" disabled={k === 0} onClick={() => set((m) => ({...m, nominees: move(m.nominees, k, -1)}))}>
+									↑
+								</button>
+								<button title="Move down" disabled={k === award.nominees.length - 1} onClick={() => set((m) => ({...m, nominees: move(m.nominees, k, 1)}))}>
+									↓
+								</button>
+								<button className="danger" title="Delete" onClick={() => set((m) => ({...m, nominees: m.nominees.filter((_, j) => j !== k)}))}>
+									✕
+								</button>
+							</span>
+						</div>
+					))}
+					{award.nominees.length < 8 ? (
+						<div className="bulk">
+							<button onClick={() => set((m) => ({...m, nominees: [...m.nominees, {name: `Nominee ${m.nominees.length + 1}`}]}))}>+ Add nominee</button>
+						</div>
+					) : null}
+				</section>
+				<section className="preview">
+					<div className="section-label">Preview</div>
+					<Preview target={target} />
+					<button className="primary wide" disabled={job?.running} onClick={() => render((p) => [minorJob((p.minorAwards ?? [])[index], p.event)])}>
+						Render “{award.title}”
+					</button>
+					<div className="muted small" style={{marginTop: 8}}>
+						12 seconds, holds on the last frame. Saved as <code>{award.id}.mp4</code>.
+					</div>
+					<RenderPanel job={job} />
+				</section>
+			</div>
+		</>
+	);
+};
+
 // ---------------------------------------------------------------- app
 
 const App: React.FC = () => {
 	const [project, setProject] = useState<Project | null>(null);
-	const [view, setView] = useState<'screens' | number>(0);
+	type View = {kind: 'screens'} | {kind: 'cat'; i: number} | {kind: 'minor'; i: number};
+	const [view, setView] = useState<View>({kind: 'cat', i: 0});
 	const [saved, setSaved] = useState<'saved' | 'saving' | 'error'>('saved');
 	const [job, setJob] = useState<RenderJob | null>(null);
 	const latest = useRef<Project | null>(null);
@@ -726,7 +914,9 @@ const App: React.FC = () => {
 
 	if (!project) return <div className="loading">Loading…</div>;
 	const cats = project.categories;
-	const catIndex = typeof view === 'number' ? Math.min(view, cats.length - 1) : -1;
+	const minors = project.minorAwards ?? [];
+	const catIndex = view.kind === 'cat' ? Math.min(view.i, cats.length - 1) : -1;
+	const minorIndex = view.kind === 'minor' ? Math.min(view.i, minors.length - 1) : -1;
 	const winners = cats.filter((c) => c.winner).length;
 
 	return (
@@ -736,7 +926,7 @@ const App: React.FC = () => {
 					Awards <span>Video</span>
 				</div>
 				<ul className="cat-list screens-link">
-					<li className={view === 'screens' ? 'active' : ''} onClick={() => setView('screens')}>
+					<li className={view.kind === 'screens' ? 'active' : ''} onClick={() => setView({kind: 'screens'})}>
 						<span className="cat-title">LED wall screens</span>
 						<span className="cat-count">{project.screens.length}</span>
 					</li>
@@ -744,7 +934,7 @@ const App: React.FC = () => {
 				<div className="section-label">Categories</div>
 				<ul className="cat-list">
 					{cats.map((c, i) => (
-						<li key={i} className={i === catIndex ? 'active' : ''} onClick={() => setView(i)}>
+						<li key={i} className={i === catIndex ? 'active' : ''} onClick={() => setView({kind: 'cat', i})}>
 							<span className="cat-title">{c.title || 'Untitled'}</span>
 							<span className="cat-count">
 								{c.winner ? '★ ' : ''}
@@ -757,10 +947,30 @@ const App: React.FC = () => {
 							className="add"
 							onClick={() => {
 								update((p) => ({...p, categories: withIds([...p.categories, {id: '', title: 'New Category', nominees: [{name: 'Nominee One'}]}])}));
-								setView(cats.length);
+								setView({kind: 'cat', i: cats.length});
 							}}
 						>
 							+ Add category
+						</button>
+					</li>
+				</ul>
+				<div className="section-label">Minor awards</div>
+				<ul className="cat-list minor-list">
+					{minors.map((m, i) => (
+						<li key={i} className={i === minorIndex ? 'active' : ''} onClick={() => setView({kind: 'minor', i})}>
+							<span className="cat-title">{m.title || 'Untitled'}</span>
+							<span className="cat-count">{m.nominees.length}</span>
+						</li>
+					))}
+					<li className="add-row">
+						<button
+							className="add"
+							onClick={() => {
+								update((p) => ({...p, minorAwards: minorWithIds([...(p.minorAwards ?? []), {id: '', title: 'New Minor Award', nominees: [{name: 'Nominee One'}, {name: 'Nominee Two'}]}])}));
+								setView({kind: 'minor', i: minors.length});
+							}}
+						>
+							+ Add minor award
 						</button>
 					</li>
 				</ul>
@@ -773,24 +983,45 @@ const App: React.FC = () => {
 								...p.categories.map(categoryJob),
 								...p.categories.filter((c) => c.winner).map(winnerJob),
 								...p.categories.flatMap((c) => [upNextJob(c, p.event), onStageJob(c, p.event)]),
-								...p.screens.map((s, i) => screenJob(s, screenIds(p.screens)[i], p.event)),
+								...p.screens.map((s, i) => screenJob(s, screenIds(p.screens)[i], p)),
 							])
 						}
 					>
 						Render everything
 					</button>
 					<div className="muted small center">
-						{plural(cats.length, 'nominee video')}, {plural(winners, 'winner video')}, {plural(cats.length * 2 + project.screens.length, 'screen')}
+						{plural(cats.length, 'nominee video')}, {plural(winners, 'winner video')}, {plural(cats.length * 2 + project.screens.length, 'screen')}, {plural(minors.length, 'minor award')}
 					</div>
 					<div className={`save ${saved}`}>{saved === 'saved' ? 'All changes saved' : saved === 'saving' ? 'Saving…' : 'Could not save. Is the app still running?'}</div>
 				</div>
 			</aside>
 
 			<main className="main">
-				{view === 'screens' ? (
+				{view.kind === 'screens' ? (
 					<ScreensView project={project} update={update} render={render} job={job} />
+				) : minorIndex >= 0 ? (
+					<MinorView
+						key={`m${minorIndex}`}
+						award={minors[minorIndex]}
+						index={minorIndex}
+						project={project}
+						update={update}
+						render={render}
+						select={(i) => setView(i === null ? {kind: 'screens'} : {kind: 'minor', i})}
+						job={job}
+					/>
 				) : catIndex >= 0 ? (
-					<CategoryView key={catIndex} cat={cats[catIndex]} event={project.event} index={catIndex} count={cats.length} update={update} render={render} select={setView} job={job} />
+					<CategoryView
+						key={catIndex}
+						cat={cats[catIndex]}
+						event={project.event}
+						index={catIndex}
+						count={cats.length}
+						update={update}
+						render={render}
+						select={(i) => setView({kind: 'cat', i})}
+						job={job}
+					/>
 				) : (
 					<div className="empty">Add a category to get started.</div>
 				)}

@@ -27,6 +27,10 @@ export type Category = {
 
 export type EventInfo = {title: string; subtitle?: string};
 
+export type MinorNominee = {name: string; detail?: string; /** image file in public/clips/ */ photo?: string};
+export type MinorAward = {id: string; title: string; kicker?: string; nominees: MinorNominee[]};
+export type RecapItem = {category: string; name: string; detail?: string};
+
 export type Screen =
 	| {type: 'title'}
 	| {type: 'background'}
@@ -35,9 +39,17 @@ export type Screen =
 	/** Per-category: short card before presenters walk on. */
 	| {type: 'upnext'; category: string; kicker?: string}
 	/** Per-category: seamless loop during the award / speech. */
-	| {type: 'onstage'; category: string; winner?: {name: string; detail?: string}};
+	| {type: 'onstage'; category: string; winner?: {name: string; detail?: string}}
+	/** A quieter title: small line above, smaller title. */
+	| {type: 'header'; title: string; kicker?: string}
+	/** Wi-Fi details, hashtag, etc. Values are shown exactly as typed. */
+	| {type: 'info'; title: string; lines: {label: string; value: string}[]}
+	/** Cycles through the winners. `items` is filled in from the categories when rendering. */
+	| {type: 'recap'; title?: string; items?: RecapItem[]}
+	/** A minor award: title and all nominees on one card. */
+	| {type: 'minor'; award: MinorAward};
 
-export type Project = {event: EventInfo; screens: Screen[]; categories: Category[]};
+export type Project = {event: EventInfo; screens: Screen[]; categories: Category[]; minorAwards?: MinorAward[]};
 
 export type CategoryProps = {
 	category: Category;

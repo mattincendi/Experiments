@@ -216,6 +216,9 @@ const TYPES = {
 	'.woff2': 'font/woff2',
 	'.woff': 'font/woff',
 	'.png': 'image/png',
+	'.jpg': 'image/jpeg',
+	'.jpeg': 'image/jpeg',
+	'.webp': 'image/webp',
 };
 
 const sendJson = (res, code, obj) => {

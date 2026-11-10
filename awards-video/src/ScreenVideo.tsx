@@ -2,6 +2,7 @@ import React from 'react';
 import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
 import {Backdrop} from './Backdrop';
 import {CategoryIntro} from './CategoryIntro';
+import {HeaderScreen, InfoScreen, MinorScreen, RecapScreen} from './ExtraScreens';
 import {GoldText} from './GoldText';
 import {FONT, FPS, GOLD, GOLD_LIGHT, IVORY, LOOP_FRAMES} from './theme';
 import type {ScreenProps} from './types';
@@ -90,9 +91,17 @@ export const ScreenVideo: React.FC<ScreenProps> = ({screen, event}) => {
 			</AbsoluteFill>
 		);
 	}
+	if (screen.type === 'minor') {
+		return (
+			<AbsoluteFill>
+				<Backdrop />
+				<MinorScreen award={screen.award} />
+			</AbsoluteFill>
+		);
+	}
 	return (
 		<AbsoluteFill>
-			<Backdrop fadeIn={false} />
+			<Backdrop fadeIn={false} glow={screen.type === 'header' ? 0.75 : 1} />
 			<AbsoluteFill style={{opacity: textIn}}>
 				{screen.type === 'title' ? <Headline title={event.title || 'Awards Night'} below={event.subtitle} /> : null}
 				{screen.type === 'message' ? <Headline title={screen.text} below={screen.subtext} above={event.title} /> : null}
@@ -103,6 +112,9 @@ export const ScreenVideo: React.FC<ScreenProps> = ({screen, event}) => {
 						<Headline title={screen.category} above={event.title} />
 					)
 				) : null}
+				{screen.type === 'header' ? <HeaderScreen title={screen.title} kicker={screen.kicker} /> : null}
+				{screen.type === 'info' ? <InfoScreen title={screen.title} lines={screen.lines} event={event.title} /> : null}
+				{screen.type === 'recap' ? <RecapScreen title={screen.title} items={screen.items ?? []} /> : null}
 				{screen.type === 'countdown' ? <Countdown text={screen.text} minutes={screen.minutes} event={event.title} /> : null}
 			</AbsoluteFill>
 		</AbsoluteFill>

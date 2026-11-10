@@ -20,7 +20,12 @@ Pre-rendered awards-night videos in navy and gold, at 1920×1080. You make every
 - **Title screen:** your event name and subtitle.
 - **Background only:** for behind presenters and speeches.
 - **Messages:** any text, e.g. "Welcome / Please take your seats", "Intermission".
-- **Countdown:** e.g. "The ceremony begins in 5:00". It counts down, then holds on 0:00.
+- **Header:** a quieter title for sections, with a small line above, e.g. "Part two / Community Awards".
+- **Countdown:** e.g. "The ceremony begins in 5:00", or "We'll be back in" for a break. It counts down, then holds on 0:00.
+- **Info / Wi-Fi:** a title plus up to 4 label/value lines. Values keep their exact spelling and case, so passwords are correct.
+- **Winners recap:** cycles through every winner you've set. It's a seamless loop of 48 seconds or a multiple of that, with at least 6 seconds per winner.
+
+**Minor awards** (`minor-*.mp4`): one 12-second card with the award name and all nominees (up to 8), holding on the last frame. Photos are optional and shown in round gold frames; nominees without a photo get a gold monogram of their initials.
 
 The title, background and message screens are **48-second seamless loops**, so set the playback software to loop them. The background is a 3D field of gold sparkles that the camera drifts through, with depth of field. It's built so the last frame flows straight into the first.
 
@@ -38,12 +43,13 @@ Keep the small terminal window open while you work. Close it to stop the app.
 
 In the app:
 - **LED wall screens** (top left): set the event name, then add, edit or remove screens.
+- **Minor awards** (left, under the categories): name, nominees and optional photos (JPG, PNG or WebP; drop onto the round box).
 - **Categories** (left): add, select, reorder or delete them. Each has a **Nominees video** tab, a **Winner video** tab and an **On the night** tab (Up next and Award in progress).
 - **Nominees**: type a name and an optional second line. Drop a video onto the box, or click it to choose a file. Optionally set a start time or a maximum length.
 - **Add several at once**: drop several clips onto the dashed area under the nominees and you get one nominee per clip, named after the file.
 - **Preview**: shows the finished video. It updates when you leave a text field or press Enter; Escape undoes what you typed.
 - **Winner**: on the Winner video tab, pick one of the nominees (or someone else), then drop in their longer clip.
-- **Render**: renders the video you're looking at. **Render everything** in the sidebar renders every nominee, winner, Up next and Award in progress video plus all screens. Each one shows a progress bar, then **Watch** and **Download** links. Finished files are saved in the `out/` folder (**Open output folder**).
+- **Render**: renders the video you're looking at. **Render everything** in the sidebar renders every nominee, winner, Up next and Award in progress video, all screens and all minor awards. Each one shows a progress bar, then **Watch** and **Download** links. Finished files are saved in the `out/` folder (**Open output folder**).
 
 Everything saves automatically to `data/awards.json`, and your clips are copied into `public/clips/`. Nothing leaves your computer. The first render downloads a small browser that's used to draw the frames, so it takes a little longer.
 
