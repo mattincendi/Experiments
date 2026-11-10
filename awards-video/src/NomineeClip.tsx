@@ -1,6 +1,5 @@
 import React from 'react';
 import {AbsoluteFill, Easing, interpolate, OffthreadVideo, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Backdrop} from './Backdrop';
 import {GoldText} from './GoldText';
 import {FADE_FRAMES, FONT, GOLD, GOLD_LIGHT, IVORY} from './theme';
 import type {Nominee} from './types';
@@ -32,7 +31,6 @@ const Corner: React.FC<{pos: 'tl' | 'tr' | 'bl' | 'br'; o: number}> = ({pos, o})
 
 const Placeholder: React.FC<{name: string}> = ({name}) => (
 	<AbsoluteFill>
-		<Backdrop glow={0.7} />
 		<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
 			<div
 				style={{
@@ -60,6 +58,11 @@ export const NomineeClip: React.FC<{nominee: Nominee}> = ({nominee}) => {
 		interpolate(frame, [0, FADE_FRAMES], [0, 1], clamp),
 		interpolate(frame, [durationInFrames - FADE_FRAMES, durationInFrames], [1, 0], clamp),
 	);
+	// Gentle push: settle in from slightly close, ease away slightly on exit.
+	const push = interpolate(frame, [0, FADE_FRAMES * 2, durationInFrames - FADE_FRAMES, durationInFrames], [1.06, 1, 1, 0.97], {
+		...clamp,
+		easing: ease,
+	});
 	const frameIn = interpolate(frame, [6, 30], [0, 1], {...clamp, easing: ease});
 	const line = interpolate(frame, [14, 40], [0, 1], {...clamp, easing: ease});
 	const nameIn = interpolate(frame, [22, 48], [0, 1], {...clamp, easing: ease});
@@ -68,12 +71,12 @@ export const NomineeClip: React.FC<{nominee: Nominee}> = ({nominee}) => {
 	const lowerOut = interpolate(frame, [durationInFrames - 24, durationInFrames - 8], [1, 0], clamp);
 
 	return (
-		<AbsoluteFill style={{opacity: fade, background: '#000'}}>
+		<AbsoluteFill style={{opacity: fade, transform: `scale(${push})`}}>
 			{nominee.clip ? (
 				<OffthreadVideo
 					src={staticFile(`clips/${nominee.clip}`)}
 					startFrom={Math.round((nominee.startAt ?? 0) * fps)}
-					style={{width: '100%', height: '100%', objectFit: 'cover'}}
+					style={{width: '100%', height: '100%', objectFit: 'cover', background: '#000'}}
 					volume={(f) => Math.min(1, f / FADE_FRAMES, (durationInFrames - f) / FADE_FRAMES)}
 				/>
 			) : (
