@@ -2,12 +2,12 @@
 
 Pre-rendered awards-night videos in navy and gold. Each category becomes one 1920×1080 MP4:
 
-1. **Category intro** (7 s, with music): gold lines draw outward, "The nominees for" fades in, then the category name appears in metallic gold. A soft bloom shows as it lands and a lens flare rides along the light sweep.
+1. **Category intro** (7 s, with music): gold lines draw outward, "The nominees for" fades in, then the category name appears in metallic gold. A light sweep then passes across it.
 2. **Nominees**: each nominee's clip plays full screen inside a gold frame with corner accents, with their name and an optional detail line in a lower-third. Clips settle in with a gentle push.
 3. **Transitions**: between scenes the picture dips to the navy backdrop while a gold light streak glides across. It alternates left-to-right and right-to-left.
 4. A fade to navy at the end, with no winner reveal, so presenters announce the winner.
 
-The backdrop has depth. Distant twinkling lights, soft mid-distance bokeh and large out-of-focus orbs drift at different speeds while the camera slowly pushes in. Faint searchlight beams sweep from above.
+The backdrop is a 3D space the scene floats in. About 1,100 gold, ivory and pale-blue particles have real positions in depth, viewed through a camera that drifts slowly forward and sways. Far particles fade into navy haze, mid-distance ones are crisp, and near ones go softly out of focus. Faint haze volumes add air. You can tune it in `src/Backdrop.tsx`: `SPEED`, `FOCUS`, `APERTURE` and the particle count.
 
 The font is **Jost**, a free geometric font close to Futura.
 

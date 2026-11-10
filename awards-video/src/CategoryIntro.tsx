@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Backdrop} from './Backdrop';
 import {GoldText} from './GoldText';
-import {LensFlare} from './LensFlare';
 import {FONT, GOLD, GOLD_LIGHT, IVORY} from './theme';
 
 const ease = Easing.bezier(0.22, 1, 0.36, 1);
@@ -50,16 +50,11 @@ export const CategoryIntro: React.FC<{title: string; kicker: string}> = ({title,
 	const out = interpolate(frame, [durationInFrames - 20, durationInFrames], [1, 0], clamp);
 	const drift = interpolate(frame, [0, durationInFrames], [1, 1.04]);
 
-	// A flare rides along with the light sweep across the title.
-	const flareX = interpolate(sweep, [-20, 120], [200, 1720]);
-	const flare = interpolate(frame, [95, 112, 135, 155], [0, 1, 0.8, 0], clamp);
-	// A soft bloom when the title lands.
-	const bloom = interpolate(frame, [50, 62, 100], [0, 0.55, 0], clamp);
-
 	const size = title.length > 22 ? 88 : title.length > 14 ? 104 : 124;
 
 	return (
 		<AbsoluteFill style={{opacity: out}}>
+			<Backdrop />
 			<AbsoluteFill style={{transform: `scale(${drift})`}}>
 				<GoldLine progress={lines} y={395} />
 				<GoldLine progress={lines} y={685} />
@@ -94,8 +89,6 @@ export const CategoryIntro: React.FC<{title: string; kicker: string}> = ({title,
 						{title}
 					</GoldText>
 				</AbsoluteFill>
-				<LensFlare x={960} y={585} intensity={bloom} width={1800} />
-				<LensFlare x={flareX} y={585} intensity={flare * 0.8} width={900} />
 			</AbsoluteFill>
 		</AbsoluteFill>
 	);

@@ -1,136 +1,128 @@
-import React from 'react';
+import React, {useLayoutEffect, useRef} from 'react';
 import {AbsoluteFill, interpolate, random, useCurrentFrame} from 'remotion';
-import {GOLD, GOLD_LIGHT, IVORY, NAVY, NAVY_DEEP, NAVY_LIGHT, WIDTH, HEIGHT} from './theme';
+import {HEIGHT, NAVY, NAVY_DEEP, NAVY_LIGHT, WIDTH} from './theme';
 
 /**
- * Layered navy backdrop with parallax depth. Each layer drifts and slowly
- * "dollies" towards the viewer at a speed set by its depth, so near layers
- * move more than far ones.
+ * A volume of space the scene floats in. Every particle has a real 3D
+ * position and is projected through a camera that drifts slowly forward
+ * and sways. Near particles move faster, grow and go out of focus (bokeh),
+ * far ones shrink and dissolve into navy haze.
  */
 
-type LayerSpec = {
-	key: string;
-	count: number;
-	size: [number, number];
-	blur: number;
-	opacity: [number, number];
-	drift: number; // horizontal px per frame
-	rise: number; // vertical px per frame
-	dolly: number; // scale gain over 10 s
-	colors: string[];
+const FOCAL = 950; // px: perspective strength
+const NEAR = 0.35;
+const FAR = 9;
+const FOCUS = 2.6; // depth that is pin-sharp
+const APERTURE = 26; // how quickly things blur away from FOCUS
+const SPEED = 0.006; // camera forward speed, world units / frame
+
+type P = {x: number; y: number; z: number; size: number; rgb: string; a: number; tw: number};
+
+const COLORS = ['243,220,149', '255,244,214', '201,162,74', '170,195,240'];
+
+const PARTICLES: P[] = new Array(1100).fill(0).map((_, i) => {
+	const r = (k: string) => random(`p-${k}-${i}`);
+	return {
+		x: (r('x') * 2 - 1) * 4.2,
+		y: (r('y') * 2 - 1) * 2.6,
+		z: NEAR + r('z') * (FAR - NEAR),
+		size: 0.008 + r('s') ** 3 * 0.035,
+		rgb: COLORS[r('c') < 0.45 ? 0 : r('c') < 0.7 ? 1 : r('c') < 0.88 ? 2 : 3],
+		a: 0.45 + r('a') * 0.55,
+		tw: r('t') * 100,
+	};
+});
+
+// Large, very faint haze volumes at depth: give the space air.
+const HAZE = new Array(7).fill(0).map((_, i) => {
+	const r = (k: string) => random(`h-${k}-${i}`);
+	return {x: (r('x') * 2 - 1) * 3, y: (r('y') * 2 - 1) * 1.6, z: 2 + r('z') * 6, size: 1.6 + r('s') * 1.6, blue: r('b') > 0.4};
+});
+
+const wrapZ = (z: number) => {
+	const span = FAR - NEAR;
+	return ((((z - NEAR) % span) + span) % span) + NEAR;
 };
 
-const LAYERS: LayerSpec[] = [
-	// Far: tiny distant lights, like a far-off audience/venue.
-	{key: 'far', count: 140, size: [1, 2.6], blur: 0, opacity: [0.15, 0.55], drift: 0.05, rise: 0.04, dolly: 0.015, colors: [GOLD_LIGHT, IVORY, '#9fb8e6']},
-	// Mid: soft bokeh.
-	{key: 'mid', count: 34, size: [14, 46], blur: 5, opacity: [0.05, 0.16], drift: 0.18, rise: 0.12, dolly: 0.05, colors: [GOLD, GOLD_LIGHT, '#7f9cd6']},
-	// Near: big out-of-focus orbs passing close to the "lens".
-	{key: 'near', count: 9, size: [140, 300], blur: 22, opacity: [0.04, 0.09], drift: 0.55, rise: 0.25, dolly: 0.12, colors: [GOLD, GOLD_LIGHT]},
-];
+const draw = (ctx: CanvasRenderingContext2D, frame: number, fade: number) => {
+	ctx.clearRect(0, 0, WIDTH, HEIGHT);
+	const camZ = frame * SPEED;
+	const camX = Math.sin(frame / 260) * 0.35;
+	const camY = Math.cos(frame / 330) * 0.16;
+	const cx = WIDTH / 2;
+	const cy = HEIGHT / 2;
 
-const wrap = (v: number, min: number, max: number) => {
-	const span = max - min;
-	return ((((v - min) % span) + span) % span) + min;
+	ctx.globalCompositeOperation = 'lighter';
+
+	for (const h of HAZE) {
+		const z = wrapZ(h.z - camZ * 0.6);
+		const sx = cx + ((h.x - camX) / z) * FOCAL;
+		const sy = cy + ((h.y - camY) / z) * FOCAL;
+		const rad = (h.size / z) * FOCAL;
+		const edge = Math.min(1, (z - NEAR) / 1.2, (FAR - z) / 1.5);
+		const alpha = 0.08 * Math.max(0, edge) * fade;
+		const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rad);
+		g.addColorStop(0, h.blue ? `rgba(70,105,175,${alpha})` : `rgba(201,162,74,${alpha * 0.6})`);
+		g.addColorStop(1, 'rgba(0,0,0,0)');
+		ctx.fillStyle = g;
+		ctx.fillRect(sx - rad, sy - rad, rad * 2, rad * 2);
+	}
+
+	// Far to near so close bokeh sits on top.
+	const items = PARTICLES.map((p) => ({p, z: wrapZ(p.z - camZ)})).sort((a, b) => b.z - a.z);
+	for (const {p, z} of items) {
+		const sx = cx + ((p.x - camX) / z) * FOCAL;
+		const sy = cy + ((p.y - camY) / z) * FOCAL;
+		const core = Math.max(0.6, (p.size / z) * FOCAL * 0.5);
+		const coc = Math.abs(1 / z - 1 / FOCUS) * APERTURE; // circle of confusion
+		const rad = Math.max(core, coc + core * 0.4);
+		if (sx < -rad || sx > WIDTH + rad || sy < -rad || sy > HEIGHT + rad) continue;
+
+		const fog = Math.exp(-(z - NEAR) / 6);
+		const edge = Math.max(0, Math.min(1, (z - NEAR) / 0.4, (FAR - z) / 1.2));
+		const spread = Math.min(1, (core / rad) ** 2 * 2.2 + 0.09);
+		const twinkle = 0.75 + 0.25 * Math.sin(frame / 22 + p.tw);
+		const alpha = p.a * fog * edge * spread * twinkle * fade;
+		if (alpha < 0.004) continue;
+
+		const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rad * (coc > core ? 1 : 2.4));
+		if (coc > core) {
+			// out of focus: flat disc with a soft rim, like real bokeh
+			g.addColorStop(0, `rgba(${p.rgb},${alpha * 0.7})`);
+			g.addColorStop(0.8, `rgba(${p.rgb},${alpha})`);
+			g.addColorStop(1, `rgba(${p.rgb},0)`);
+		} else {
+			g.addColorStop(0, `rgba(${p.rgb},${alpha})`);
+			g.addColorStop(0.25, `rgba(${p.rgb},${alpha * 0.5})`);
+			g.addColorStop(1, `rgba(${p.rgb},0)`);
+		}
+		ctx.fillStyle = g;
+		ctx.beginPath();
+		ctx.arc(sx, sy, rad * (coc > core ? 1 : 2.4), 0, Math.PI * 2);
+		ctx.fill();
+	}
+	ctx.globalCompositeOperation = 'source-over';
 };
-
-const Layer: React.FC<{spec: LayerSpec; frame: number; fadeIn: number}> = ({spec, frame, fadeIn}) => {
-	const scale = 1 + (spec.dolly * frame) / 300;
-	return (
-		<AbsoluteFill style={{transform: `scale(${scale})`}}>
-			{new Array(spec.count).fill(0).map((_, i) => {
-				const r = (n: string) => random(`${spec.key}-${n}-${i}`);
-				const size = spec.size[0] + r('size') * (spec.size[1] - spec.size[0]);
-				const margin = size + 40;
-				const x = wrap(r('x') * WIDTH + frame * spec.drift * (r('dir') > 0.5 ? 1 : -0.6), -margin, WIDTH + margin);
-				const y = wrap(r('y') * HEIGHT - frame * spec.rise * (0.5 + r('v')), -margin, HEIGHT + margin);
-				const twinkle =
-					spec.key === 'far' ? 0.35 + 0.65 * Math.abs(Math.sin(frame / (18 + r('t') * 50) + i)) : 0.8 + 0.2 * Math.sin(frame / 50 + i);
-				const opacity = (spec.opacity[0] + r('o') * (spec.opacity[1] - spec.opacity[0])) * twinkle * fadeIn;
-				const color = spec.colors[Math.floor(r('c') * spec.colors.length)];
-				return (
-					<div
-						key={i}
-						style={{
-							position: 'absolute',
-							left: x - size / 2,
-							top: y - size / 2,
-							width: size,
-							height: size,
-							borderRadius: '50%',
-							background:
-								spec.key === 'far'
-									? color
-									: `radial-gradient(circle, ${color} 0%, ${color} 55%, transparent 72%)`,
-							boxShadow: spec.key === 'far' ? `0 0 ${size * 4}px ${color}` : undefined,
-							filter: spec.blur ? `blur(${spec.blur}px)` : undefined,
-							opacity,
-						}}
-					/>
-				);
-			})}
-		</AbsoluteFill>
-	);
-};
-
-/** Slow, soft searchlight beams from above, the classic premiere look, kept subtle. */
-const Beams: React.FC<{frame: number; strength: number}> = ({frame, strength}) => (
-	<AbsoluteFill style={{overflow: 'hidden', mixBlendMode: 'screen'}}>
-		{[
-			{x: 22, base: -18, speed: 1 / 140, phase: 0},
-			{x: 78, base: 18, speed: 1 / 160, phase: 2},
-			{x: 50, base: 0, speed: 1 / 190, phase: 4},
-		].map((b, i) => {
-			const angle = b.base + Math.sin(frame * b.speed + b.phase) * 9;
-			return (
-				<div
-					key={i}
-					style={{
-						position: 'absolute',
-						left: `${b.x}%`,
-						top: -200,
-						width: 260,
-						height: 1700,
-						marginLeft: -130,
-						transformOrigin: '50% 0%',
-						transform: `rotate(${angle}deg)`,
-						background:
-							'linear-gradient(180deg, rgba(243,220,149,0.16) 0%, rgba(243,220,149,0.05) 45%, transparent 80%)',
-						clipPath: 'polygon(42% 0, 58% 0, 100% 100%, 0 100%)',
-						filter: 'blur(26px)',
-						opacity: strength * 0.6 * (0.7 + 0.3 * Math.sin(frame / 70 + i)),
-					}}
-				/>
-			);
-		})}
-	</AbsoluteFill>
-);
 
 export const Backdrop: React.FC<{glow?: number}> = ({glow = 1}) => {
 	const frame = useCurrentFrame();
-	const fadeIn = interpolate(frame, [0, 30], [0, 1], {extrapolateRight: 'clamp'});
-	const breathe = 0.85 + 0.15 * Math.sin(frame / 45);
+	const ref = useRef<HTMLCanvasElement>(null);
+	const fade = interpolate(frame, [0, 30], [0, 1], {extrapolateRight: 'clamp'});
+
+	useLayoutEffect(() => {
+		const ctx = ref.current?.getContext('2d');
+		if (ctx) draw(ctx, frame, fade);
+	}, [frame, fade]);
 
 	return (
 		<AbsoluteFill style={{background: NAVY_DEEP, overflow: 'hidden'}}>
 			<AbsoluteFill
 				style={{
 					background: `radial-gradient(ellipse 60% 55% at 50% 45%, ${NAVY_LIGHT} 0%, ${NAVY} 45%, ${NAVY_DEEP} 100%)`,
-					opacity: glow * breathe,
+					opacity: glow * (0.88 + 0.12 * Math.sin(frame / 45)),
 				}}
 			/>
-			<Layer spec={LAYERS[0]} frame={frame} fadeIn={fadeIn} />
-			{/* Distant horizon haze: suggests a deep stage behind the title */}
-			<AbsoluteFill
-				style={{
-					background:
-						'radial-gradient(ellipse 70% 14% at 50% 70%, rgba(201,162,74,0.10) 0%, rgba(201,162,74,0.03) 50%, transparent 100%)',
-					opacity: glow,
-				}}
-			/>
-			<Beams frame={frame} strength={glow * fadeIn} />
-			<Layer spec={LAYERS[1]} frame={frame} fadeIn={fadeIn} />
-			<Layer spec={LAYERS[2]} frame={frame} fadeIn={fadeIn} />
+			<canvas ref={ref} width={WIDTH} height={HEIGHT} style={{position: 'absolute', inset: 0}} />
 			<AbsoluteFill
 				style={{background: 'radial-gradient(ellipse 75% 75% at 50% 50%, transparent 50%, rgba(0,0,0,0.7) 100%)'}}
 			/>
