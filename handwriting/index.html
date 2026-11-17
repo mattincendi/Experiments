@@ -142,7 +142,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 <div class="app">
   <header class="top">
     <canvas id="logo" aria-label="Handwriter" role="img"></canvas>
-    <p>Type something and it comes back handwritten. Every letter is drawn as a fresh pen stroke, so repeated letters never match exactly.</p>
+    <p>Type something and it comes back handwritten, in print, joined-up cursive and more. Every letter is drawn as a fresh pen stroke, so repeated letters never match exactly.</p>
   </header>
 
   <main class="grid">
@@ -163,6 +163,10 @@ Love, Jo</textarea>
     </section>
 
     <section class="panel controls">
+      <div class="group">
+        <span class="label">Style</span>
+        <div class="seg" id="styles" role="group" aria-label="Handwriting style"></div>
+      </div>
       <div class="group">
         <span class="label">Pen</span>
         <div class="seg" id="pens" role="group" aria-label="Pen type"></div>
@@ -323,6 +327,81 @@ def('£', 4.8, [[3.9, 7.0], [3.2, 8], [2.0, 7.9], [1.4, 6.8], [1.5, 4.0], [1.2, 
 def('€', 5.4, [arc(3.2, 4.0, 2.6, 4.0, 50, 310)], [[0, 4.8], [3.4, 4.8]], [[0, 3.2], [3.0, 3.2]]);
 def('ß', 4.6, [[0.5, 0], [0.5, 6.8], [1.3, 8.4], [2.6, 8.6], [3.6, 7.6], [3.3, 6.0], [2.1, 5.2, C], [3.6, 4.4], [4.3, 2.6], [3.8, 0.7], [2.6, 0], [1.6, 0.3]]);
 
+/* Cursive. Lowercase letters start with a lead-in from (0, 0.8) and end
+   with an exit stroke at (w, 0.8), so neighbours join into one pen line.
+   `lead` = how many lead-in points to drop when the previous letter
+   exits high (o, b, v, w end at the x-height instead of the baseline). */
+const CG = {};
+const K = arr => arr.map((p, i) => i ? p : [p[0], p[1], C]);
+const cdef = (ch, w, opt, ...strokes) => { CG[ch] = { w, s: strokes.map(flat), join: !opt.solo, lead: opt.lead || 0, ws: opt.ws || 0, high: !!opt.high }; };
+const LOOP = [[0, 0.8], [1.4, 3.0], [2.4, 5.6], [2.9, 7.6], [2.6, 9.0], [1.9, 9.0], [1.5, 7.8], [1.4, 5.0]];
+const BOWL = [[0, 0.8], [1.4, 3.0], K(arc(2.3, 2.5, 1.6, 2.3, 65, 360))];
+cdef('a', 5.6, { lead: 2, ws: 2 }, [...BOWL, [3.9, 5.0, C], [3.9, 1.2], [4.3, 0.2], [5.0, 0.4], [5.6, 0.8]]);
+cdef('b', 4.8, { lead: 1, high: true }, [...LOOP, [1.4, 1.0], [2.0, 0.1], [3.0, 0.2], [3.8, 1.4], [3.9, 3.4], [3.3, 4.4], [3.9, 4.4], [4.8, 4.6]]);
+cdef('c', 4.4, { lead: 2, ws: 2 }, [[0, 0.8], [1.8, 3.4], [3.3, 4.7], K(arc(2.5, 2.5, 1.6, 2.4, 40, 290)), [4.4, 0.8]]);
+cdef('d', 5.6, { lead: 2, ws: 2 }, [...BOWL, [3.9, 9.0, C], [3.9, 1.2], [4.3, 0.2], [5.0, 0.4], [5.6, 0.8]]);
+cdef('e', 4.4, { lead: 2 }, [[0, 0.8], [1.6, 1.9], [3.0, 3.0], [3.4, 4.2], [2.8, 5.0], [2.0, 4.8], [1.4, 3.6], [1.3, 2.0], [1.8, 0.6], [2.8, 0.1], [3.8, 0.4], [4.4, 0.8]]);
+cdef('f', 3.6, { lead: 1 }, [...LOOP, [1.4, 0], [1.4, -2.4], [1.7, -3.4], [2.3, -3.1], [2.4, -1.6], [2.0, -0.2], [2.8, 0.4], [3.6, 0.8]]);
+cdef('g', 5.2, { lead: 2, ws: 2 }, [...BOWL, [3.9, 5.0, C], [3.9, -2.2], [3.4, -3.4], [2.5, -3.6], [1.9, -2.9], [2.4, -1.6], [3.6, -0.4], [4.6, 0.4], [5.2, 0.8]]);
+cdef('h', 5.4, { lead: 1 }, [...LOOP, [1.4, 0, C], [1.7, 2.4], [2.6, 3.8], [3.4, 3.9], [3.8, 3.0], [3.8, 1.0], [4.2, 0.2], [4.9, 0.4], [5.4, 0.8]]);
+cdef('i', 3.3, { lead: 2 }, [[0, 0.8], [1.2, 2.8], [1.7, 5.0, C], [1.6, 1.0], [2.0, 0.2], [2.7, 0.3], [3.3, 0.8]], dot(1.8, 6.8));
+cdef('ı', 3.3, { lead: 2 }, [[0, 0.8], [1.2, 2.8], [1.7, 5.0, C], [1.6, 1.0], [2.0, 0.2], [2.7, 0.3], [3.3, 0.8]]);
+cdef('j', 3.4, { lead: 2 }, [[0, 0.8], [1.2, 2.8], [1.7, 5.0, C], [1.6, -2.4], [1.2, -3.4], [0.5, -3.5], [0.3, -2.8], [1.0, -1.4], [2.2, -0.2], [3.0, 0.4], [3.4, 0.8]], dot(1.8, 6.8));
+cdef('ȷ', 3.4, { lead: 2 }, [[0, 0.8], [1.2, 2.8], [1.7, 5.0, C], [1.6, -2.4], [1.2, -3.4], [0.5, -3.5], [0.3, -2.8], [1.0, -1.4], [2.2, -0.2], [3.0, 0.4], [3.4, 0.8]]);
+cdef('k', 5.0, { lead: 1 }, [...LOOP, [1.4, 0, C], [1.6, 2.2], [2.6, 3.9], [3.6, 4.0], [3.6, 3.0], [2.4, 2.4], [1.8, 2.3, C], [2.6, 2.0], [3.2, 0.8], [3.7, 0.2], [4.4, 0.4], [5.0, 0.8]]);
+cdef('l', 3.6, { lead: 1 }, [...LOOP, [1.4, 2.0], [1.7, 0.5], [2.4, 0.1], [3.2, 0.4], [3.6, 0.8]]);
+cdef('m', 6.3, { lead: 2 }, [[0, 0.8], [0.5, 3.2], [1.0, 4.7], [1.4, 4.0], [1.3, 0, C], [1.6, 3.0], [2.2, 4.6], [2.8, 4.4], [3.0, 3.4], [3.0, 0, C], [3.3, 3.0], [3.9, 4.6], [4.5, 4.4], [4.7, 3.4], [4.7, 1.0], [5.1, 0.2], [5.8, 0.4], [6.3, 0.8]]);
+cdef('n', 4.7, { lead: 2 }, [[0, 0.8], [0.5, 3.2], [1.0, 4.7], [1.4, 4.0], [1.3, 0, C], [1.6, 3.0], [2.3, 4.6], [2.9, 4.4], [3.1, 3.4], [3.1, 1.0], [3.5, 0.2], [4.2, 0.4], [4.7, 0.8]]);
+cdef('o', 4.6, { lead: 2, ws: 2, high: true }, [[0, 0.8], [1.4, 3.0], K(arc(2.3, 2.5, 1.5, 2.2, 85, 440)), [3.4, 4.5], [4.6, 4.6]]);
+cdef('p', 4.6, { lead: 2 }, [[0, 0.8], [0.9, 3.0], [1.4, 4.8, C], [1.3, -3.5, C], [1.4, 2.8], [2.2, 4.4], [3.2, 4.4], [3.8, 3.0], [3.4, 0.8], [2.4, 0.1], [1.5, 0.4, C], [2.6, 0.4], [3.8, 0.5], [4.6, 0.8]]);
+cdef('q', 5.2, { lead: 2, ws: 2 }, [...BOWL, [3.9, 5.0, C], [3.9, -2.6], [4.2, -3.5], [4.7, -3.2], [4.6, -2.0], [4.4, -0.6], [4.8, 0.2], [5.4, 0.8]]);
+cdef('r', 4.8, { lead: 2 }, [[0, 0.8], [1.2, 3.4], [1.7, 5.2, C], [2.2, 4.4], [2.8, 4.6], [3.2, 4.4], [3.2, 1.2], [3.6, 0.2], [4.3, 0.4], [4.8, 0.8]]);
+cdef('s', 4.3, { lead: 2 }, [[0, 0.8], [1.4, 3.0], [2.4, 4.9, C], [3.3, 2.6], [3.4, 1.0], [2.6, 0.1], [1.6, 0.2], [1.2, 0.8, C], [2.6, 0.3], [3.6, 0.4], [4.3, 0.8]]);
+cdef('t', 3.4, { lead: 2 }, [[0, 0.8], [1.2, 3.2], [1.8, 7.2, C], [1.6, 1.0], [2.0, 0.2], [2.8, 0.3], [3.4, 0.8]], [[0.6, 5.0], [3.2, 5.1]]);
+cdef('u', 4.8, { lead: 2 }, [[0, 0.8], [0.8, 3.2], [1.2, 4.8, C], [1.1, 1.4], [1.6, 0.2], [2.4, 0.2], [3.1, 1.4], [3.3, 4.8, C], [3.2, 1.0], [3.6, 0.2], [4.3, 0.4], [4.8, 0.8]]);
+cdef('v', 4.6, { lead: 2, high: true }, [[0, 0.8], [0.6, 3.4], [1.0, 4.6], [1.5, 4.0], [1.9, 1.8], [2.4, 0.1, C], [3.3, 2.8], [3.7, 4.7, C], [4.6, 4.6]]);
+cdef('w', 5.6, { lead: 2, high: true }, [[0, 0.8], [0.6, 3.4], [1.0, 4.6], [1.3, 3.6], [1.5, 1.4], [1.9, 0.1], [2.4, 1.0], [2.8, 3.6, C], [3.1, 1.4], [3.6, 0.1], [4.2, 1.4], [4.6, 4.7, C], [5.6, 4.6]]);
+cdef('x', 4.4, { lead: 2 }, [[0, 0.8], [1.0, 3.6], [1.8, 4.8], [2.4, 3.8], [2.6, 1.4], [3.0, 0.2], [3.8, 0.4], [4.4, 0.8]], [[3.4, 4.8], [1.4, 0.0]]);
+cdef('y', 5.0, { lead: 2 }, [[0, 0.8], [0.8, 3.2], [1.2, 4.8, C], [1.1, 1.4], [1.6, 0.2], [2.4, 0.2], [3.1, 1.4], [3.3, 4.8, C], [3.2, -2.4], [2.7, -3.4], [2.0, -3.5], [1.7, -2.8], [2.5, -1.4], [3.6, -0.3], [4.6, 0.4], [5.0, 0.8]]);
+cdef('z', 4.4, { lead: 2 }, [[0, 0.8], [1.0, 3.6], [1.6, 4.8], [3.4, 4.8, C], [0.8, 0.2, C], [3.2, 0.1], [4.4, 0.8]]);
+// script capitals (stand alone; the next letter starts with its own lead-in)
+const S1 = { solo: true };
+cdef('A', 6.0, S1, [K(arc(2.6, 3.8, 2.3, 3.8, 60, 360)), [4.9, 8.0, C], [4.9, 1.0], [5.4, 0.1], [6.0, 0.6]]);
+cdef('B', 4.8, S1, [[0.6, 8.0], [0.6, 0.0]], [[0.6, 7.8], [2.2, 8.3], [3.8, 7.6], [3.8, 6.0], [2.2, 4.4], [1.4, 4.4, C], [3.4, 4.0], [4.4, 2.6], [4.0, 0.8], [2.4, 0], [0.6, 0.4]]);
+cdef('C', 5.4, S1, [[4.6, 6.8], [4.2, 7.8], [3.0, 8.1], [1.4, 7.2], [0.4, 5.0], [0.4, 2.6], [1.4, 0.6], [2.8, 0], [4.2, 0.4], [5.0, 1.2]]);
+cdef('D', 5.6, S1, [[1.4, 7.8], [1.2, 1.6], [0.8, 0.2], [0.1, 0.4], [0.6, 1.0], [2.4, 0.1], [4.2, 1.0], [5.2, 3.4], [5.0, 6.2], [3.6, 7.8], [1.8, 8.1], [0.4, 7.4]]);
+cdef('E', 4.8, S1, [[3.8, 7.0], [3.2, 8.0], [1.8, 8.0], [1.2, 7.0], [1.8, 5.4], [2.8, 4.6, C], [1.4, 4.4], [0.3, 3.0], [0.5, 1.0], [1.8, 0.0], [3.4, 0.2], [4.4, 1.0]]);
+cdef('F', 5.0, S1, [[0.4, 7.4], [1.6, 8.0], [3.4, 7.8], [5.0, 8.2]], [[3.0, 7.8], [2.6, 3.0], [2.0, 0.6], [1.0, 0.0], [0.2, 0.6]], [[1.6, 4.2], [3.8, 4.4]]);
+cdef('G', 5.4, S1, [[4.4, 6.6], [3.8, 7.8], [2.6, 8.0], [1.2, 7.0], [0.4, 4.6], [0.6, 2.0], [1.8, 0.3], [3.2, 0.1], [4.2, 1.0], [4.6, 3.0], [4.6, 4.2, C], [4.5, -1.6], [3.9, -3.2], [3.0, -3.4], [2.6, -2.4], [3.6, -0.8], [5.2, 0.4]]);
+cdef('H', 5.6, S1, [[0.8, 8.0], [0.8, 0.0]], [[4.4, 8.0], [4.4, 0.6], [4.9, 0.0], [5.4, 0.4]], [[0.8, 4.2], [4.4, 4.2]]);
+cdef('I', 3.2, S1, [[0.4, 7.4], [1.2, 8.1], [2.6, 8.0, C], [2.0, 3.0], [1.6, 0.6], [0.8, 0.0], [0.2, 0.5]]);
+cdef('J', 4.2, S1, [[0.6, 7.4], [1.6, 8.1], [3.0, 8.0, C], [2.6, 0.0], [2.0, -2.6], [1.0, -3.4], [0.3, -2.6], [1.0, -1.0], [2.6, 0.0], [4.0, 0.6]]);
+cdef('K', 5.0, S1, [[0.8, 8.0], [0.8, 0.0]], [[4.4, 8.0], [1.0, 3.6, C], [2.2, 4.0], [3.2, 1.2], [3.8, 0.1], [4.6, 0.5]]);
+cdef('L', 5.0, S1, [[2.8, 6.6], [3.6, 7.8], [3.0, 8.2], [2.0, 7.2], [1.6, 4.0], [1.0, 1.2], [0.2, 0.2], [0.8, 0.0], [2.4, 0.6], [3.8, 0.0], [4.8, 0.6]]);
+cdef('M', 6.0, S1, [[0.1, 0.2], [0.8, 4.0], [1.2, 7.6], [1.6, 8.0], [2.2, 6.4], [2.6, 0.2, C], [3.2, 5.6], [4.0, 8.0], [4.6, 6.4], [4.6, 1.0], [5.1, 0.0], [5.8, 0.5]]);
+cdef('N', 5.6, S1, [[0.1, 0.2], [0.8, 4.0], [1.2, 7.6], [1.6, 8.0], [2.2, 6.4], [3.4, 1.0], [3.8, 0.1], [4.2, 1.2], [4.4, 7.0], [4.8, 8.0], [5.4, 7.6]]);
+cdef('O', 5.6, S1, [arc(2.9, 4.0, 2.5, 4.0, 85, 445), [3.4, 7.2], [4.4, 7.6]]);
+cdef('P', 4.6, S1, [[1.0, 0.0], [1.0, 8.0, C], [2.8, 8.1], [4.0, 7.2], [4.0, 5.6], [2.8, 4.4], [1.2, 4.4]]);
+cdef('Q', 5.8, S1, [arc(2.9, 4.2, 2.5, 3.8, 85, 445)], [[3.2, 1.6], [4.4, 0.2], [5.6, 0.0]]);
+cdef('R', 5.0, S1, [[1.0, 0.0], [1.0, 8.0, C], [2.8, 8.1], [4.0, 7.2], [4.0, 5.6], [2.8, 4.4], [1.2, 4.4, C], [2.6, 3.6], [3.4, 1.0], [4.0, 0.1], [4.8, 0.5]]);
+cdef('S', 4.6, S1, [[0.2, 0.8], [1.6, 3.4], [3.0, 6.4], [4.0, 8.1], [3.2, 8.0], [2.4, 6.8], [3.0, 5.0], [4.0, 3.4], [4.0, 1.4], [2.8, 0.1], [1.4, 0.2], [0.6, 0.9]]);
+cdef('T', 5.2, S1, [[0.4, 7.4], [1.6, 8.1], [3.4, 7.8], [5.2, 8.2]], [[3.0, 7.8], [2.6, 3.0], [2.0, 0.6], [1.0, 0.0], [0.2, 0.6]]);
+cdef('U', 5.6, S1, [[0.3, 7.2], [0.8, 8.0], [1.2, 7.0], [1.0, 2.4], [1.6, 0.4], [2.8, 0.0], [3.8, 1.0], [4.4, 4.0], [4.6, 8.0, C], [4.4, 1.0], [4.9, 0.1], [5.6, 0.5]]);
+cdef('V', 5.8, S1, [[0.3, 7.2], [0.8, 8.0], [1.4, 6.4], [2.6, 0.2, C], [3.8, 4.6], [4.8, 8.0], [5.6, 8.2]]);
+cdef('W', 7.0, S1, [[0.3, 7.2], [0.8, 8.0], [1.3, 6.2], [2.0, 0.2, C], [3.2, 6.0, C], [4.2, 0.2, C], [5.4, 6.0], [6.0, 8.0], [6.8, 8.2]]);
+cdef('X', 5.0, S1, [[0.4, 7.4], [1.2, 8.0], [2.2, 6.6], [3.0, 1.2], [3.8, 0.1], [4.6, 0.6]], [[4.6, 8.0], [0.4, 0.0]]);
+cdef('Y', 5.4, S1, [[0.3, 7.2], [0.8, 8.0], [1.2, 7.0], [1.0, 4.6], [1.8, 3.2], [3.0, 3.4], [3.8, 5.0], [4.2, 8.0, C], [4.0, -2.2], [3.4, -3.4], [2.4, -3.4], [2.2, -2.4], [3.6, -0.8], [5.2, 0.4]]);
+cdef('Z', 5.0, S1, [[0.6, 7.4], [1.6, 8.1], [3.2, 7.8], [4.6, 8.0, C], [0.4, 0.2, C], [2.0, 0.6], [3.4, 0.0], [4.8, 0.4]]);
+
+/* Styles: which letter set to use plus how the hand moves */
+const STYLES = {
+  print:   { name: 'Print',          set: 'print',   slant: 6,  gap: 0.9 },
+  cursive: { name: 'Cursive',        set: 'cursive', slant: 14, gap: 0.15, join: true },
+  hurried: { name: 'Hurried',        set: 'print',   slant: 15, gap: 0.55, xScale: 0.84, smooth: true, messBoost: 1.5 },
+  rounded: { name: 'Rounded',        set: 'print',   slant: 0,  gap: 1.1,  xScale: 1.18, smooth: true, messBoost: 0.8 },
+  caps:    { name: 'Block capitals', set: 'print',   slant: 2,  gap: 1.3,  upper: true },
+};
+
 // accents (combining marks), drawn relative to the letter's centre
 const MARKS = {
   '́': [[[0.55, 1.3], [-0.35, 0.1]]],
@@ -337,16 +416,17 @@ const CEDILLA = '̧';
 const ALIAS = { '’': "'", '‘': "'", '“': '"', '”': '"', '–': '-', '−': '-', ' ': ' ' };
 const TALL = new Set('bdfhklt');
 const compCache = new Map();
-function glyphFor(base, marks) {
+function glyphFor(base, marks, set) {
   base = ALIAS[base] || base;
-  if (!marks.length) return G[base] || G[base.toLowerCase()] || G[base.toUpperCase()] || null;
-  const key = base + marks.join('');
+  const pick = c => (set === 'cursive' && CG[c]) || G[c];
+  if (!marks.length) return pick(base) || pick(base.toLowerCase()) || pick(base.toUpperCase()) || null;
+  const key = set + base + marks.join('');
   if (compCache.has(key)) return compCache.get(key);
   const above = marks.some(m => MARKS[m]);
   let b = base;
   if (above && b === 'i') b = 'ı';
   if (above && b === 'j') b = 'ȷ';
-  const g0 = G[b] || G[b.toLowerCase()];
+  const g0 = pick(b) || pick(b.toLowerCase());
   if (!g0) return null;
   const upper = base !== base.toLowerCase();
   const h = upper ? 8.9 : TALL.has(base) ? 9.7 : 6.1;
@@ -359,7 +439,7 @@ function glyphFor(base, marks) {
       for (const st of MARKS[m]) s.push(st.map(p => [p[0] + cx, p[1] + h + lift, p[2] || 0]));
     }
   });
-  const g = { w: g0.w, s };
+  const g = { ...g0, s };
   compCache.set(key, g);
   return g;
 }
@@ -409,6 +489,7 @@ function deform(g, R, P) {
   const dy = R.n() * 0.1 * m;
   const ax = R.n() * 0.09 * m, ay = R.n() * 0.09 * m;
   const fx = R.range(0.5, 1.2), fy = R.range(0.5, 1.2), px = R.range(0, 6.28), py = R.range(0, 6.28);
+  const xs = P.style.xScale || 1;
   const jit = 0.03 * m, cx = g.w / 2, cs = Math.cos(rot), sn = Math.sin(rot);
   const strokes = g.s.map((st, si) => {
     // later strokes (dots, crossbars) are placed after a pen lift, so they drift a little more
@@ -416,12 +497,12 @@ function deform(g, R, P) {
     return st.map(p => {
       let x = p[0] + ax * Math.sin(p[1] * fy + px) + R.n() * jit + ox;
       let y = p[1] + ay * Math.sin(p[0] * fx + py) + R.n() * jit + oy;
-      x = (x - cx) * sx; y = y * sy; x += y * tsl;
-      return [x * cs - y * sn + cx, x * sn + y * cs + dy, p[2] || 0];
+      x = (x - cx) * sx * xs; y = y * sy; x += y * tsl;
+      return [x * cs - y * sn + cx * xs, x * sn + y * cs + dy, p[2] || 0];
     });
   });
-  const adv = g.w + 0.9 * P.letterSp + R.n() * 0.12 * m;
-  return { strokes, adv };
+  const adv = g.w * xs + P.style.gap * P.letterSp + R.n() * 0.12 * m;
+  return { strokes, adv, join: !!(g.join && P.style.join), lead: g.lead || 0, ws: g.ws || 0, high: !!g.high };
 }
 
 function splitGraphemes(word) {
@@ -450,6 +531,7 @@ function layout(text, P) {
     };
     line.cx = line.x0; line.empty = true; lineIdx++;
   };
+  if (P.style.upper) text = text.toUpperCase();
   const paras = text.replace(/\r/g, '').replace(/\t/g, '    ').replace(/…/g, '...').split('\n');
   for (const para of paras) {
     newLine();
@@ -462,7 +544,7 @@ function layout(text, P) {
       const insts = [];
       let wUnits = 0;
       for (const gr of splitGraphemes(word)) {
-        const g = glyphFor(gr.base, gr.marks);
+        const g = glyphFor(gr.base, gr.marks, P.style.set);
         if (!g) { insts.push({ strokes: [], adv: 2 }); wUnits += 2; continue; }
         const inst = deform(g, R, P);
         inst.press = R.range(0.9, 1.08);
@@ -475,16 +557,31 @@ function layout(text, P) {
       pendingSpace = sp;
       const u = unit0 * wScale * line.scale;
       const tSlope = Math.tan(line.slope);
+      // in cursive, each joining letter's main stroke continues the previous one
+      let chain = null, prevHigh = false;
       for (const inst of insts) {
-        for (const st of inst.strokes) {
-          const pts = st.map(p => {
-            const X = line.cx + p[0] * u;
-            let Y = line.y - p[1] * u;
-            Y += (X - line.x0) * tSlope + line.wa * Math.sin(X * line.wf + line.wp) + wDy;
-            return [X, Y, p[2]];
-          });
-          strokes.push({ pts, press: inst.press, phase: inst.phase });
-        }
+        const place = p => {
+          const X = line.cx + p[0] * u;
+          let Y = line.y - p[1] * u;
+          Y += (X - line.x0) * tSlope + line.wa * Math.sin(X * line.wf + line.wp) + wDy;
+          return [X, Y, p[2]];
+        };
+        inst.strokes.forEach((st, si) => {
+          if (si === 0 && inst.join && chain) {
+            const src = prevHigh ? st.slice(Math.min(inst.lead, st.length - 1)) : st;
+            const mm = src.map(place);
+            mm[0][2] = 0;
+            chain.pts.push(...mm);
+          } else {
+            // round letters starting a word begin at the bowl, without the lead-in
+            const src = si === 0 && inst.join ? st.slice(Math.min(inst.ws, st.length - 1)) : st;
+            const stroke = { pts: src.map(place), press: inst.press, phase: inst.phase };
+            strokes.push(stroke);
+            if (si === 0 && inst.join) chain = stroke;
+          }
+        });
+        if (!inst.join) chain = null;
+        prevHigh = inst.high;
         line.cx += inst.adv * u;
       }
       line.empty = false;
@@ -531,6 +628,16 @@ function outlines(strokes, P) {
       const q = pts[pts.length - 1];
       if (q && Math.hypot(p[0] - q[0], p[1] - q[1]) < 0.004) { if (p[2]) q[2] = 1; continue; }
       pts.push(p);
+    }
+    if (P.style.smooth) {
+      // a quick hand rounds off corners, but still turns back sharply on a retrace
+      for (let i = 1; i < pts.length - 1; i++) {
+        if (!pts[i][2]) continue;
+        const ax = pts[i][0] - pts[i - 1][0], ay = pts[i][1] - pts[i - 1][1];
+        const bx = pts[i + 1][0] - pts[i][0], by = pts[i + 1][1] - pts[i][1];
+        const cos = (ax * bx + ay * by) / (Math.hypot(ax, ay) * Math.hypot(bx, by) || 1);
+        if (cos > -0.55) pts[i][2] = 0;
+      }
     }
     if (pts.length === 1) pts.push([pts[0][0] + 0.03, pts[0][1] + 0.02, 0]);
     const pieces = [];
@@ -723,7 +830,7 @@ const SLIDERS = {
   ],
 };
 const DEFAULTS = {
-  pen: 'ballpoint', color: '#1f2a48', nib: 0.4, xh: 3.0, slant: 6, messRaw: 45,
+  style: 'print', pen: 'ballpoint', color: '#1f2a48', nib: 0.4, xh: 3.0, slant: 6, messRaw: 45,
   letterSpRaw: 100, wordSpRaw: 100, lineGap: 8.0, width: 120, dpi: 300, bg: 'none',
   seed: 48213,
 };
@@ -736,11 +843,12 @@ try {
   }
 } catch (e) { /* storage unavailable */ }
 if (!PENS[S.pen]) S.pen = DEFAULTS.pen;
+if (!STYLES[S.style]) S.style = DEFAULTS.style;
 
 function params(extra) {
   return {
-    pen: S.pen, color: S.color, nib: S.nib, xh: S.xh, slant: S.slant,
-    mess: S.messRaw / 45, letterSp: S.letterSpRaw / 100, wordSp: S.wordSpRaw / 100,
+    style: STYLES[S.style], pen: S.pen, color: S.color, nib: S.nib, xh: S.xh, slant: S.slant,
+    mess: S.messRaw / 45 * (STYLES[S.style].messBoost || 1), letterSp: S.letterSpRaw / 100, wordSp: S.wordSpRaw / 100,
     lineGap: S.lineGap, width: S.width, seed: S.seed, bg: S.bg, ...extra,
   };
 }
@@ -783,6 +891,9 @@ for (const [box, list] of Object.entries(SLIDERS)) {
 }
 function syncSlider(id) { const e = sliderEls[id]; e.input.value = S[id]; e.out.textContent = e.sd.fmt(+S[id]); }
 
+seg('styles', Object.entries(STYLES).map(([k, v]) => [k, v.name]), 'style', k => {
+  S.slant = STYLES[k].slant; syncSlider('slant');
+});
 seg('pens', Object.entries(PENS).map(([k, v]) => [k, v.name]), 'pen', k => {
   S.nib = PENS[k].nib; syncSlider('nib');
   if (k === 'pencil') { S.color = '#4b4c52'; markInk(); }
@@ -880,7 +991,7 @@ document.getElementById('saveSvg').addEventListener('click', () => {
 
 /* the wordmark is written by the same generator */
 function drawLogo() {
-  const P = { ...params(), pen: 'fountain', nib: 0.75, xh: 3.4, slant: 8, mess: 1, letterSp: 0.95, wordSp: 1, width: 500, seed: 7, lineGap: 10 };
+  const P = { ...params(), style: STYLES.cursive, pen: 'fountain', nib: 0.75, xh: 3.4, slant: 12, mess: 1, letterSp: 0.95, wordSp: 1, width: 500, seed: 7, lineGap: 10 };
   const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2a43ad';
   P.color = accent;
   const strokes = layout('Handwriter', P);
