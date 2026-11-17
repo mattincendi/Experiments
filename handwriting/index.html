@@ -372,8 +372,8 @@ cdef('n', 4.7, { lead: 2 }, [[0, 0.8], [0.5, 3.2], [1.0, 4.7], [1.4, 4.0], [1.3,
 cdef('o', 4.6, { lead: 2, ws: 2, high: true }, [[0, 0.8], [1.4, 3.0], K(arc(2.3, 2.5, 1.5, 2.2, 85, 440)), [3.4, 4.5], [4.6, 4.6]]);
 cdef('p', 4.6, { lead: 2 }, [[0, 0.8], [0.9, 3.0], [1.4, 4.8, C], [1.3, -3.5, C], [1.4, 2.8], [2.2, 4.4], [3.2, 4.4], [3.8, 3.0], [3.4, 0.8], [2.4, 0.1], [1.5, 0.4, C], [2.6, 0.4], [3.8, 0.5], [4.6, 0.8]]);
 cdef('q', 5.2, { lead: 2, ws: 2 }, [...BOWL, [3.9, 5.0, C], [3.9, -2.6], [4.2, -3.5], [4.7, -3.2], [4.6, -2.0], [4.4, -0.6], [4.8, 0.2], [5.4, 0.8]]);
-cdef('r', 4.8, { lead: 2 }, [[0, 0.8], [1.2, 3.4], [1.7, 5.2, C], [2.2, 4.4], [2.8, 4.6], [3.2, 4.4], [3.2, 1.2], [3.6, 0.2], [4.3, 0.4], [4.8, 0.8]]);
-cdef('s', 4.3, { lead: 2 }, [[0, 0.8], [1.4, 3.0], [2.4, 4.9, C], [3.3, 2.6], [3.4, 1.0], [2.6, 0.1], [1.6, 0.2], [1.2, 0.8, C], [2.6, 0.3], [3.6, 0.4], [4.3, 0.8]]);
+cdef('r', 5.0, { lead: 2 }, [[0, 0.8], [1.2, 3.4], [1.6, 5.2, C], [2.0, 4.1], [2.7, 4.4], [3.3, 5.0, C], [3.3, 3.0], [3.3, 1.2], [3.7, 0.2], [4.4, 0.4], [5.0, 0.8]]);
+cdef('s', 4.0, { lead: 2 }, [[0, 0.8], [1.3, 2.9], [2.2, 5.0, C], [2.7, 3.9], [3.2, 2.5], [3.1, 1.0], [2.4, 0.15], [1.6, 0.2], [1.3, 0.7, C], [2.3, 0.45], [3.3, 0.45], [4.0, 0.8]]);
 cdef('t', 3.4, { lead: 2 }, [[0, 0.8], [1.2, 3.2], [1.8, 7.2, C], [1.6, 1.0], [2.0, 0.2], [2.8, 0.3], [3.4, 0.8]], [[0.6, 5.0], [3.2, 5.1]]);
 cdef('u', 4.8, { lead: 2 }, [[0, 0.8], [0.8, 3.2], [1.2, 4.8, C], [1.1, 1.4], [1.6, 0.2], [2.4, 0.2], [3.1, 1.4], [3.3, 4.8, C], [3.2, 1.0], [3.6, 0.2], [4.3, 0.4], [4.8, 0.8]]);
 cdef('v', 4.6, { lead: 2, high: true }, [[0, 0.8], [0.6, 3.4], [1.0, 4.6], [1.5, 4.0], [1.9, 1.8], [2.4, 0.1, C], [3.3, 2.8], [3.7, 4.7, C], [4.6, 4.6]]);
@@ -413,15 +413,15 @@ cdef('Z', 5.0, S1, [[0.6, 7.4], [1.6, 8.1], [3.2, 7.8], [4.6, 8.0, C], [0.4, 0.2
 /* Styles: which letter set to use plus how the hand moves */
 const STYLES = {
   print:   { name: 'Print',          set: 'print',   slant: 6,  gap: 0.9 },
-  cursive: { name: 'Cursive',        set: 'cursive', slant: 14, gap: 0.15, join: true },
-  hurried: { name: 'Hurried',        set: 'print',   slant: 15, gap: 0.55, xScale: 0.84, smooth: true, messBoost: 1.5 },
-  rounded: { name: 'Rounded',        set: 'print',   slant: 0,  gap: 1.1,  xScale: 1.18, smooth: true, messBoost: 0.8 },
+  cursive: { name: 'Cursive',        set: 'cursive', slant: 14, gap: 0.15, join: true, smoothness: 1.7 },
+  hurried: { name: 'Hurried',        set: 'print',   slant: 15, gap: 0.55, xScale: 0.84, smooth: true, messBoost: 1.5, smoothness: 1.4 },
+  rounded: { name: 'Rounded',        set: 'print',   slant: 0,  gap: 1.1,  xScale: 1.18, smooth: true, messBoost: 0.8, smoothness: 1.3 },
   caps:    { name: 'Block capitals', set: 'print',   slant: 2,  gap: 1.3,  upper: true },
   // leans back, crossbars pulled right-to-left, slightly cramped
   lefty:   { name: 'Left-handed',    set: 'print',   slant: -12, gap: 0.75, xScale: 0.96, messBoost: 1.15, leftHand: true },
   // big, wide and wobbly; uneven sizes, a bouncy baseline, the odd back-to-front letter
   child:   { name: "Child's",        set: 'print',   slant: 0,  gap: 1.5,  xScale: 1.12, smooth: true, messBoost: 1.7,
-             sizeVar: 2.2, bounce: 2.5, tremor: 0.014, flips: 0.06, xh: 5.5, lineGap: 15 },
+             sizeVar: 2.2, bounce: 2.5, tremor: 0.014, smoothness: 0.9, flips: 0.06, xh: 5.5, lineGap: 15 },
 };
 // letters children commonly write back to front
 const FLIPPABLE = new Set('NSZJsz2379');
@@ -496,11 +496,11 @@ function makeRand(seed) {
    Pens
 ---------------------------------------------------------------- */
 const PENS = {
-  gel:       { name: 'Gel',       nib: 0.5,  alpha: 0.96, grain: 0.06, taper: 0.30, press: 0.07, dir: 0 },
-  ballpoint: { name: 'Ballpoint', nib: 0.4,  alpha: 0.86, grain: 0.32, taper: 0.45, press: 0.16, dir: 0 },
-  fountain:  { name: 'Fountain',  nib: 0.6,  alpha: 0.92, grain: 0.07, taper: 0.40, press: 0.18, dir: 0.75 },
-  pencil:    { name: 'Pencil',    nib: 0.5,  alpha: 0.80, grain: 0.62, taper: 0.40, press: 0.20, dir: 0 },
-  felt:      { name: 'Felt tip',  nib: 0.9,  alpha: 0.95, grain: 0.10, taper: 0.15, press: 0.05, dir: 0 },
+  gel:       { name: 'Gel',       nib: 0.5,  alpha: 0.96, grain: 0.06, taper: 0.30, press: 0.07, dir: 0, speed: 0.16, blob: 0.04 },
+  ballpoint: { name: 'Ballpoint', nib: 0.4,  alpha: 0.86, grain: 0.32, taper: 0.45, press: 0.16, dir: 0, speed: 0.26, blob: 0.10 },
+  fountain:  { name: 'Fountain',  nib: 0.6,  alpha: 0.92, grain: 0.07, taper: 0.40, press: 0.18, dir: 0.75, speed: 0.22, blob: 0 },
+  pencil:    { name: 'Pencil',    nib: 0.5,  alpha: 0.80, grain: 0.62, taper: 0.40, press: 0.20, dir: 0, speed: 0.2, blob: 0 },
+  felt:      { name: 'Felt tip',  nib: 0.9,  alpha: 0.95, grain: 0.10, taper: 0.15, press: 0.05, dir: 0, speed: 0.08, blob: 0 },
 };
 const INKS = [
   ['Blue-black', '#1f2a48'], ['Royal blue', '#1f3fbf'], ['Black', '#17171a'],
@@ -510,16 +510,19 @@ const INKS = [
 /* ---------------------------------------------------------------
    Layout: text -> pen strokes in millimetres (y grows downward)
 ---------------------------------------------------------------- */
-function deform(g, R, P) {
-  const m = P.mess, sv = P.style.sizeVar || 1;
-  const sx = 1 + R.n() * 0.035 * m * sv, sy = 1 + R.n() * 0.05 * m * sv;
-  const rot = R.n() * 1.3 * m * D2R;
-  const tsl = Math.tan((P.slant + R.n() * 2 * m) * D2R);
-  const dy = R.n() * 0.1 * m * (P.style.bounce || 1);
+function deform(g, R, P, hand, kind) {
+  const m = P.mess, sv = P.style.sizeVar || 1, bn = P.style.bounce || 1;
+  // `hand` drifts slowly from letter to letter (a real hand changes gradually);
+  // the smaller R.n() terms are each letter's own wobble
+  const sx = 1 + (hand.sz * 0.025 + R.n() * 0.02) * m * sv;
+  const sy = 1 + (hand.sz * 0.04 + R.n() * 0.028) * m * sv;
+  const rot = (hand.rot * 0.9 + R.n() * 0.6) * m * D2R;
+  const tsl = Math.tan((P.slant + (hand.sl * 1.8 + R.n() * 0.8) * m) * D2R);
+  const dy = (hand.dy * 0.07 + R.n() * 0.04) * m * bn;
   const ax = R.n() * 0.09 * m, ay = R.n() * 0.09 * m;
   const fx = R.range(0.5, 1.2), fy = R.range(0.5, 1.2), px = R.range(0, 6.28), py = R.range(0, 6.28);
   const xs = P.style.xScale || 1;
-  const jit = 0.03 * m, cx = g.w / 2, cs = Math.cos(rot), sn = Math.sin(rot);
+  const jit = 0.015 * m, cx = g.w / 2, cs = Math.cos(rot), sn = Math.sin(rot);
   const strokes = g.s.map((st, si) => {
     // later strokes (dots, crossbars) are placed after a pen lift, so they drift a little more
     const ox = si ? R.n() * 0.09 * m : 0, oy = si ? R.n() * 0.09 * m : 0;
@@ -535,8 +538,21 @@ function deform(g, R, P) {
       return [x * cs - y * sn + cx * xs, x * sn + y * cs + dy, p[2] || 0];
     });
   });
-  const adv = g.w * xs + P.style.gap * P.letterSp + R.n() * 0.12 * m;
-  return { strokes, adv, join: !!(g.join && P.style.join), lead: g.lead || 0, ws: g.ws || 0, high: !!g.high };
+  let adv, right = -Infinity;
+  if (P.style.join) {
+    adv = g.w * xs + P.style.gap * P.letterSp + R.n() * 0.1 * m;
+  } else {
+    // space by the visible gap between letters, measured across the x-height band for lowercase
+    let lo = Infinity, hi = -Infinity;
+    const scan = band => { for (const st of strokes) for (const q of st) if (!band || (q[1] > -0.8 && q[1] < 5.6)) { if (q[0] < lo) lo = q[0]; if (q[0] > hi) hi = q[0]; } };
+    scan(kind === 'lower');
+    if (!isFinite(lo)) scan(false);
+    for (const st of strokes) for (const q of st) q[0] -= lo;
+    for (const st of strokes) for (const q of st) if (q[0] > right) right = q[0];
+    const gap = (P.style.gap + 0.35) * (kind === 'punct' ? 0.5 : 1);
+    adv = (hi - lo) + gap * P.letterSp + R.n() * 0.1 * m;
+  }
+  return { strokes, adv, right, kind, join: !!(g.join && P.style.join), lead: g.lead || 0, ws: g.ws || 0, high: !!g.high };
 }
 
 function splitGraphemes(word) {
@@ -553,11 +569,15 @@ function layout(text, P) {
   const m = P.mess, xh = P.xh, unit0 = xh / 5;
   const strokes = [];
   let lineIdx = 0, line;
+  // a writer's lines tend to rise or fall the same way down the page
+  const pageSlope = R.n() * 0.3 * m;
+  const hand = { sl: R.n(), sz: R.n(), dy: R.n(), rot: R.n() };
+  const drift = () => { for (const k in hand) hand[k] = 0.82 * hand[k] + 0.57 * R.n(); };
   const newLine = () => {
     line = {
       y: P.lineGap * lineIdx + R.n() * 0.06 * m * xh,
       x0: R.n() * 0.35 * m,
-      slope: R.n() * 0.45 * m * D2R,
+      slope: (pageSlope + R.n() * 0.25 * m) * D2R,
       wa: xh * 0.05 * m * R.range(0.5, 1.2),
       wf: 2 * Math.PI / R.range(35, 80),
       wp: R.range(0, 6.28),
@@ -572,7 +592,8 @@ function layout(text, P) {
     const words = para.split(' ');
     let pendingSpace = 0;
     for (const word of words) {
-      const sp = (3.1 * P.wordSp + R.n() * 0.25 * m) * unit0;
+      // letters are spaced edge to edge, so word gaps carry a little more room than in joined cursive
+      const sp = ((P.style.join ? 3.1 : 3.9) * P.wordSp + R.n() * 0.25 * m) * unit0;
       if (!word) { pendingSpace += sp; continue; }
       const wScale = 1 + R.n() * 0.025 * m, wDy = R.n() * 0.05 * m * xh;
       const insts = [];
@@ -581,7 +602,9 @@ function layout(text, P) {
         let g = glyphFor(gr.base, gr.marks, P.style.set);
         if (!g) { insts.push({ strokes: [], adv: 2 }); wUnits += 2; continue; }
         if (P.style.flips && !gr.marks.length && FLIPPABLE.has(gr.base) && R.u() < P.style.flips) g = flipped(g, P.style.set + gr.base);
-        const inst = deform(g, R, P);
+        drift();
+        const kind = /[a-z]/.test(gr.base) ? 'lower' : /[.,;:!?'"]/.test(gr.base) ? 'punct' : 'other';
+        const inst = deform(g, R, P, hand, kind);
         inst.press = R.range(0.9, 1.08);
         inst.phase = [R.range(0, 6.28), R.range(0, 6.28)];
         insts.push(inst); wUnits += inst.adv;
@@ -593,8 +616,10 @@ function layout(text, P) {
       const u = unit0 * wScale * line.scale;
       const tSlope = Math.tan(line.slope);
       // in cursive, each joining letter's main stroke continues the previous one
-      let chain = null, prevHigh = false;
+      let chain = null, prevHigh = false, prevRight = -Infinity;
       for (const inst of insts) {
+        // punctuation never tucks under the tail of the letter before it
+        if (inst.kind === 'punct') line.cx = Math.max(line.cx, prevRight + 0.25 * u);
         const place = p => {
           const X = line.cx + p[0] * u;
           let Y = line.y - p[1] * u;
@@ -602,14 +627,16 @@ function layout(text, P) {
           return [X, Y, p[2]];
         };
         inst.strokes.forEach((st, si) => {
-          if (si === 0 && inst.join && chain) {
+          // now and then the pen lifts between joined letters and starts again
+          const lift = si === 0 && inst.join && chain && R.u() < 0.05 * Math.min(1, m);
+          if (si === 0 && inst.join && chain && !lift) {
             const src = prevHigh ? st.slice(Math.min(inst.lead, st.length - 1)) : st;
             const mm = src.map(place);
             mm[0][2] = 0;
             chain.pts.push(...mm);
           } else {
             // round letters starting a word begin at the bowl, without the lead-in
-            const src = si === 0 && inst.join ? st.slice(Math.min(inst.ws, st.length - 1)) : st;
+            const src = si === 0 && inst.join && !lift ? st.slice(Math.min(inst.ws, st.length - 1)) : st;
             const stroke = { pts: src.map(place), press: inst.press, phase: inst.phase };
             strokes.push(stroke);
             if (si === 0 && inst.join) chain = stroke;
@@ -617,6 +644,7 @@ function layout(text, P) {
         });
         if (!inst.join) chain = null;
         prevHigh = inst.high;
+        prevRight = isFinite(inst.right) ? line.cx + inst.right * u : -Infinity;
         line.cx += inst.adv * u;
       }
       line.empty = false;
@@ -652,10 +680,51 @@ function catmull(pts, perMm) {
 
 const ease = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
 
+// even spacing along a polyline, endpoints kept
+function resample(c, h) {
+  const out = [c[0]];
+  let prev = c[0], need = h;
+  for (let i = 1; i < c.length; i++) {
+    let a = prev;
+    const b = c[i];
+    let seg = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    while (seg >= need) {
+      const t = need / seg;
+      const q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      out.push(q); a = q; seg -= need; need = h;
+    }
+    need -= seg; prev = b;
+  }
+  const last = c[c.length - 1], o = out[out.length - 1];
+  if (out.length > 1 && Math.hypot(last[0] - o[0], last[1] - o[1]) < h * 0.3) out[out.length - 1] = last; else out.push(last);
+  return out;
+}
+// gaussian smoothing along the path; the window narrows at the ends so endpoints stay put
+function smoothPath(p, sig) {
+  const n = p.length;
+  if (sig < 0.6 || n < 5) return p;
+  const R = Math.ceil(sig * 2.5), w = [];
+  for (let k = 0; k <= R; k++) w.push(Math.exp(-k * k / (2 * sig * sig)));
+  const out = new Array(n);
+  out[0] = p[0]; out[n - 1] = p[n - 1];
+  for (let i = 1; i < n - 1; i++) {
+    const r = Math.min(R, i, n - 1 - i);
+    let sx = p[i][0] * w[0], sy = p[i][1] * w[0], sw = w[0];
+    for (let k = 1; k <= r; k++) { sx += (p[i - k][0] + p[i + k][0]) * w[k]; sy += (p[i - k][1] + p[i + k][1]) * w[k]; sw += 2 * w[k]; }
+    out[i] = [sx / sw, sy / sw];
+  }
+  return out;
+}
+
+// returns one group per pen stroke: its outline polygons and its ink opacity
 function outlines(strokes, P) {
   const pen = PENS[P.pen];
   const tremor = (P.style.tremor || 0) * P.xh * Math.min(1.5, P.mess);
-  const polys = [];
+  // the hand moves in smooth arcs: smooth the path over a fraction of the letter size
+  const sigma = 0.035 * P.xh * (P.style.smoothness || 1);
+  const H = Math.max(0.015, Math.min(0.05, sigma / 3));
+  const dec = Math.max(1, Math.round(0.08 / H));
+  const groups = [];
   const nibAngle = 40 * D2R;
   for (const s of strokes) {
     // dedupe and split at corners
@@ -683,10 +752,20 @@ function outlines(strokes, P) {
       if (pts[i][2] && i < pts.length - 1) { pieces.push(cur); cur = [pts[i]]; }
     }
     pieces.push(cur);
-    const curves = pieces.map(pc => catmull(pc, 8));
+    const curves = pieces.map(pc => {
+      const c = smoothPath(resample(catmull(pc, 6), H), sigma / H);
+      const o = [];
+      for (let i = 0; i < c.length; i += dec) o.push(c[i]);
+      if (o[o.length - 1] !== c[c.length - 1]) o.push(c[c.length - 1]);
+      if (o.length < 2) o.push([o[0][0] + 0.02, o[0][1] + 0.01]);
+      return o;
+    });
     let total = 0;
     const lens = curves.map(c => { let l = 0; for (let i = 1; i < c.length; i++) l += Math.hypot(c[i][0] - c[i - 1][0], c[i][1] - c[i - 1][1]); total += l; return l; });
     const short = total < 1.2;
+    // a ballpoint sometimes leaves a small blob where it touches down
+    const blob = pen.blob && !short && h2(Math.floor(s.phase[0] * 1e4), Math.floor(s.phase[1] * 1e4)) < pen.blob;
+    const polys = [];
     let s0 = 0;
     curves.forEach((c, ci) => {
       const N = c.length;
@@ -705,8 +784,24 @@ function outlines(strokes, P) {
           f *= (1 - taper) + taper * ease(acc / 0.5);
           f *= (1 - taper * 0.8) + taper * 0.8 * ease((total - acc) / 0.7);
         }
+        // the pen slows down in tight turns (and speeds up on straights), so more ink lands there
+        if (pen.speed && i > 1 && i < N - 2) {
+          const p0 = c[i - 2], p1 = c[i], p2 = c[i + 2];
+          const ux = p1[0] - p0[0], uy = p1[1] - p0[1], vx = p2[0] - p1[0], vy = p2[1] - p1[1];
+          const lu = Math.hypot(ux, uy), lv = Math.hypot(vx, vy);
+          if (lu > 1e-6 && lv > 1e-6) {
+            const kappa = Math.abs(Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)) / ((lu + lv) / 2);
+            f *= 1 + pen.speed * 2 * (1 - 1 / Math.cbrt(1 + kappa * P.xh * 0.5));
+          }
+        }
+        if (blob && ci === 0) f *= 1 + 0.55 * Math.exp(-acc / 0.12);
         if (pen.dir) f *= (1 - pen.dir) + pen.dir * (0.3 + 1.1 * Math.abs(Math.sin(Math.atan2(dy, dx) - nibAngle)));
         w[i] = Math.max(0.06, P.nib * f) / 2;
+      }
+      // ink spreads, so the line's width changes gradually rather than point to point
+      if (N > 5) {
+        const ws = smoothPath(w.map(v => [v, 0]), 2.5);
+        for (let i = 0; i < N; i++) w[i] = ws[i][0];
       }
       if (tremor) {
         // an unsteady hand: the line wavers sideways as it goes
@@ -733,13 +828,16 @@ function outlines(strokes, P) {
       for (let k = 1; k < K; k++) { const a = capStart - Math.PI * k / K; poly.push([c[0][0] + Math.cos(a) * w[0], c[0][1] + Math.sin(a) * w[0]]); }
       polys.push(poly);
     });
+    // each stroke is laid down separately, so ink darkens where strokes cross
+    const inkVar = Math.min(1, Math.max(0, (s.press - 0.9) / 0.18));
+    groups.push({ polys, alpha: pen.alpha * (0.93 + 0.07 * inkVar) });
   }
-  return polys;
+  return groups;
 }
 
-function boundsOf(polys, pad) {
+function boundsOf(groups, pad) {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const p of polys) for (const q of p) {
+  for (const gr of groups) for (const p of gr.polys) for (const q of p) {
     if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0];
     if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1];
   }
@@ -771,35 +869,38 @@ function rasterInk(polys, B, s, P) {
   const ctx = cv.getContext('2d', { willReadFrequently: true });
   ctx.setTransform(s, 0, 0, s, -B.x * s, -B.y * s);
   ctx.fillStyle = P.color;
-  ctx.beginPath();
-  for (const p of polys) {
-    ctx.moveTo(p[0][0], p[0][1]);
-    for (let i = 1; i < p.length; i++) ctx.lineTo(p[i][0], p[i][1]);
-    ctx.closePath();
+  for (const gr of polys) {
+    ctx.globalAlpha = gr.alpha;
+    ctx.beginPath();
+    for (const p of gr.polys) {
+      ctx.moveTo(p[0][0], p[0][1]);
+      for (let i = 1; i < p.length; i++) ctx.lineTo(p[i][0], p[i][1]);
+      ctx.closePath();
+    }
+    ctx.fill('nonzero');
   }
-  ctx.fill('nonzero');
-  const img = ctx.getImageData(0, 0, W, H), d = img.data;
-  const g = pen.grain, A = pen.alpha;
-  for (let y = 0; y < H; y++) {
-    const my = B.y + (y + 0.5) / s;
-    for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4 + 3;
-      const a = d[i];
-      if (!a) continue;
-      const mx = B.x + (x + 0.5) / s;
-      let f = A;
-      if (g > 0) {
+  ctx.globalAlpha = 1;
+  const g = pen.grain;
+  if (g > 0) {
+    // paper tooth and uneven ink: thin the ink in a fine, slightly clumpy pattern
+    const img = ctx.getImageData(0, 0, W, H), d = img.data;
+    for (let y = 0; y < H; y++) {
+      const my = B.y + (y + 0.5) / s;
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4 + 3;
+        const a = d[i];
+        if (!a) continue;
+        const mx = B.x + (x + 0.5) / s;
         const fine = h2(Math.floor(mx * 22), Math.floor(my * 22));
         const coarse = vnoise(mx * 4.5, my * 4.5);
         const broad = vnoise(mx * 0.5 + 91, my * 0.5 + 17);
         const n = 0.45 * fine + 0.35 * coarse + 0.2 * broad;
-        f *= 1 - g * Math.pow(n, 1.3);
+        d[i] = a * (1 - g * Math.pow(n, 1.3));
       }
-      d[i] = a * f;
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.putImageData(img, 0, 0);
   }
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.putImageData(img, 0, 0);
   return cv;
 }
 
@@ -820,17 +921,21 @@ async function withDpi(blob, dpi) {
   return new Blob([out], { type: 'image/png' });
 }
 
-function svgFor(polys, B, P) {
+function svgFor(groups, B, P) {
   const r = v => (Math.round(v * 1000) / 1000).toString();
-  let d = '';
-  for (const p of polys) {
-    d += 'M' + r(p[0][0] - B.x) + ' ' + r(p[0][1] - B.y);
-    for (let i = 1; i < p.length; i++) d += 'L' + r(p[i][0] - B.x) + ' ' + r(p[i][1] - B.y);
-    d += 'Z';
+  let paths = '';
+  for (const gr of groups) {
+    let d = '';
+    for (const p of gr.polys) {
+      d += 'M' + r(p[0][0] - B.x) + ' ' + r(p[0][1] - B.y);
+      for (let i = 1; i < p.length; i++) d += 'L' + r(p[i][0] - B.x) + ' ' + r(p[i][1] - B.y);
+      d += 'Z';
+    }
+    paths += `<path fill-opacity="${r(gr.alpha)}" d="${d}"/>`;
   }
   const bg = P.bg === 'white' ? `<rect width="100%" height="100%" fill="#ffffff"/>` : '';
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${r(B.w)}mm" height="${r(B.h)}mm" viewBox="0 0 ${r(B.w)} ${r(B.h)}">${bg}<g opacity="${PENS[P.pen].alpha}"><path fill="${P.color}" fill-rule="nonzero" d="${d}"/></g></svg>`;
+<svg xmlns="http://www.w3.org/2000/svg" width="${r(B.w)}mm" height="${r(B.h)}mm" viewBox="0 0 ${r(B.w)} ${r(B.h)}">${bg}<g fill="${P.color}" fill-rule="nonzero">${paths}</g></svg>`;
 }
 
 const dlPromise = (window.claude && typeof window.claude.use === 'function')
