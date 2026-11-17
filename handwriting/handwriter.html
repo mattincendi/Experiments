@@ -95,7 +95,21 @@ header.top p { margin: 0; color: var(--muted); max-width: 60ch; padding-bottom: 
 .custom { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
 .custom input { width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
 
-.slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.slider { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 6px; align-items: center; }
+.reset {
+  width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border-radius: 6px;
+  border: 1px solid transparent; background: transparent; color: var(--accent); cursor: pointer;
+}
+.reset svg { width: 14px; height: 14px; }
+.reset:hover:not(:disabled) { background: var(--chip); border-color: var(--line); }
+.reset:disabled { color: var(--muted); opacity: .35; cursor: default; }
+.group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.group-head .label { margin-bottom: 0; }
+.linkbtn {
+  border: 0; background: none; padding: 2px 4px; border-radius: 4px; cursor: pointer;
+  font: 600 12px var(--font-ui); color: var(--accent);
+}
+.linkbtn:hover { text-decoration: underline; }
 .slider label { font-weight: 500; }
 .slider output { font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 2px 0 0; }
@@ -156,7 +170,10 @@ Love, Jo</textarea>
 
     <section class="panel controls">
       <div class="group">
-        <span class="label">Style</span>
+        <div class="group-head">
+          <span class="label">Style</span>
+          <button class="linkbtn" id="resetAll" type="button">Reset all settings</button>
+        </div>
         <div class="seg" id="styles" role="group" aria-label="Handwriting style"></div>
       </div>
       <div class="group">
@@ -392,7 +409,19 @@ const STYLES = {
   hurried: { name: 'Hurried',        set: 'print',   slant: 15, gap: 0.55, xScale: 0.84, smooth: true, messBoost: 1.5 },
   rounded: { name: 'Rounded',        set: 'print',   slant: 0,  gap: 1.1,  xScale: 1.18, smooth: true, messBoost: 0.8 },
   caps:    { name: 'Block capitals', set: 'print',   slant: 2,  gap: 1.3,  upper: true },
+  // leans back, crossbars pulled right-to-left, slightly cramped
+  lefty:   { name: 'Left-handed',    set: 'print',   slant: -12, gap: 0.75, xScale: 0.96, messBoost: 1.15, leftHand: true },
+  // big, wide and wobbly; uneven sizes, a bouncy baseline, the odd back-to-front letter
+  child:   { name: "Child's",        set: 'print',   slant: 0,  gap: 1.5,  xScale: 1.12, smooth: true, messBoost: 1.7,
+             sizeVar: 2.2, bounce: 2.5, tremor: 0.014, flips: 0.06, xh: 5.5, lineGap: 15 },
 };
+// letters children commonly write back to front
+const FLIPPABLE = new Set('NSZJsz2379');
+const flipCache = new Map();
+function flipped(g, key) {
+  if (!flipCache.has(key)) flipCache.set(key, { ...g, s: g.s.map(st => st.map(p => [g.w - p[0], p[1], p[2] || 0])) });
+  return flipCache.get(key);
+}
 
 // accents (combining marks), drawn relative to the letter's centre
 const MARKS = {
@@ -474,11 +503,11 @@ const INKS = [
    Layout: text -> pen strokes in millimetres (y grows downward)
 ---------------------------------------------------------------- */
 function deform(g, R, P) {
-  const m = P.mess;
-  const sx = 1 + R.n() * 0.035 * m, sy = 1 + R.n() * 0.05 * m;
+  const m = P.mess, sv = P.style.sizeVar || 1;
+  const sx = 1 + R.n() * 0.035 * m * sv, sy = 1 + R.n() * 0.05 * m * sv;
   const rot = R.n() * 1.3 * m * D2R;
   const tsl = Math.tan((P.slant + R.n() * 2 * m) * D2R);
-  const dy = R.n() * 0.1 * m;
+  const dy = R.n() * 0.1 * m * (P.style.bounce || 1);
   const ax = R.n() * 0.09 * m, ay = R.n() * 0.09 * m;
   const fx = R.range(0.5, 1.2), fy = R.range(0.5, 1.2), px = R.range(0, 6.28), py = R.range(0, 6.28);
   const xs = P.style.xScale || 1;
@@ -486,6 +515,11 @@ function deform(g, R, P) {
   const strokes = g.s.map((st, si) => {
     // later strokes (dots, crossbars) are placed after a pen lift, so they drift a little more
     const ox = si ? R.n() * 0.09 * m : 0, oy = si ? R.n() * 0.09 * m : 0;
+    // a left hand pulls short horizontal strokes from right to left
+    if (P.style.leftHand && st.length <= 3) {
+      const a = st[0], b = st[st.length - 1];
+      if (b[0] - a[0] > 1.5 * Math.abs(b[1] - a[1])) st = st.slice().reverse();
+    }
     return st.map(p => {
       let x = p[0] + ax * Math.sin(p[1] * fy + px) + R.n() * jit + ox;
       let y = p[1] + ay * Math.sin(p[0] * fx + py) + R.n() * jit + oy;
@@ -536,8 +570,9 @@ function layout(text, P) {
       const insts = [];
       let wUnits = 0;
       for (const gr of splitGraphemes(word)) {
-        const g = glyphFor(gr.base, gr.marks, P.style.set);
+        let g = glyphFor(gr.base, gr.marks, P.style.set);
         if (!g) { insts.push({ strokes: [], adv: 2 }); wUnits += 2; continue; }
+        if (P.style.flips && !gr.marks.length && FLIPPABLE.has(gr.base) && R.u() < P.style.flips) g = flipped(g, P.style.set + gr.base);
         const inst = deform(g, R, P);
         inst.press = R.range(0.9, 1.08);
         inst.phase = [R.range(0, 6.28), R.range(0, 6.28)];
@@ -611,6 +646,7 @@ const ease = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x);
 
 function outlines(strokes, P) {
   const pen = PENS[P.pen];
+  const tremor = (P.style.tremor || 0) * P.xh * Math.min(1.5, P.mess);
   const polys = [];
   const nibAngle = 40 * D2R;
   for (const s of strokes) {
@@ -663,6 +699,15 @@ function outlines(strokes, P) {
         }
         if (pen.dir) f *= (1 - pen.dir) + pen.dir * (0.3 + 1.1 * Math.abs(Math.sin(Math.atan2(dy, dx) - nibAngle)));
         w[i] = Math.max(0.06, P.nib * f) / 2;
+      }
+      if (tremor) {
+        // an unsteady hand: the line wavers sideways as it goes
+        let a2 = s0;
+        for (let i = 0; i < N; i++) {
+          if (i) a2 += Math.hypot(c[i][0] - c[i - 1][0], c[i][1] - c[i - 1][1]);
+          const o = tremor * ((0.7 * vnoise(a2 * 1.7 + s.phase[0] * 9, s.phase[1] * 9) + 0.3 * vnoise(a2 * 5 + 40, s.phase[0] * 9)) * 2 - 1);
+          c[i] = [c[i][0] - ty[i] * o, c[i][1] + tx[i] * o];
+        }
       }
       s0 += lens[ci];
       const left = [], right = [];
@@ -865,6 +910,16 @@ function seg(containerId, items, key, onPick) {
   }
 }
 
+// a slider's default follows the chosen style (slant, size, line spacing) and pen (width)
+function defaultFor(id) {
+  const st = STYLES[S.style];
+  if (id === 'slant') return st.slant;
+  if (id === 'nib') return PENS[S.pen].nib;
+  if (id === 'xh' && st.xh) return st.xh;
+  if (id === 'lineGap' && st.lineGap) return st.lineGap;
+  return DEFAULTS[id];
+}
+const RESET_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v2.8h2.8"/></svg>';
 const sliderEls = {};
 for (const [box, list] of Object.entries(SLIDERS)) {
   const host = document.getElementById(box);
@@ -872,19 +927,39 @@ for (const [box, list] of Object.entries(SLIDERS)) {
     const wrap = document.createElement('div');
     wrap.className = 'slider';
     wrap.innerHTML = `<label for="sl-${sd.id}">${sd.label}</label><output id="out-${sd.id}" for="sl-${sd.id}"></output>` +
+      `<button type="button" class="reset" id="reset-${sd.id}">${RESET_ICON}</button>` +
       `<input type="range" id="sl-${sd.id}" min="${sd.min}" max="${sd.max}" step="${sd.step}">`;
     host.appendChild(wrap);
-    const input = wrap.querySelector('input'), out = wrap.querySelector('output');
+    const input = wrap.querySelector('input'), out = wrap.querySelector('output'), reset = wrap.querySelector('.reset');
     input.value = S[sd.id];
     out.textContent = sd.fmt(+input.value);
     input.addEventListener('input', () => { S[sd.id] = +input.value; out.textContent = sd.fmt(+input.value); schedule(); });
-    sliderEls[sd.id] = { input, out, sd };
+    reset.addEventListener('click', () => { S[sd.id] = defaultFor(sd.id); syncSlider(sd.id); schedule(); input.focus(); });
+    sliderEls[sd.id] = { input, out, sd, reset };
   }
 }
 function syncSlider(id) { const e = sliderEls[id]; e.input.value = S[id]; e.out.textContent = e.sd.fmt(+S[id]); }
+function refreshResets() {
+  for (const [id, e] of Object.entries(sliderEls)) {
+    const d = defaultFor(id);
+    const same = Math.abs(S[id] - d) < e.sd.step / 2;
+    e.reset.disabled = same;
+    const label = same ? `${e.sd.label} is at its default` : `Reset ${e.sd.label.toLowerCase()} to ${e.sd.fmt(d)}`;
+    e.reset.title = label; e.reset.setAttribute('aria-label', label);
+  }
+}
+function markSeg(containerId, val) {
+  document.querySelectorAll(`#${containerId} button`).forEach(b => b.setAttribute('aria-pressed', String(b.id === containerId + '-' + val)));
+}
 
+let lastStyle = S.style;
 seg('styles', Object.entries(STYLES).map(([k, v]) => [k, v.name]), 'style', k => {
-  S.slant = STYLES[k].slant; syncSlider('slant');
+  const st = STYLES[k], prev = STYLES[lastStyle];
+  S.slant = st.slant; syncSlider('slant');
+  // only move size and spacing when entering or leaving a style that sets them
+  if (st.xh || prev.xh) { S.xh = st.xh || DEFAULTS.xh; syncSlider('xh'); }
+  if (st.lineGap || prev.lineGap) { S.lineGap = st.lineGap || DEFAULTS.lineGap; syncSlider('lineGap'); }
+  lastStyle = k;
 });
 seg('pens', Object.entries(PENS).map(([k, v]) => [k, v.name]), 'pen', k => {
   S.nib = PENS[k].nib; syncSlider('nib');
@@ -912,6 +987,17 @@ function markInk() {
   customInput.value = S.color;
 }
 markInk();
+
+document.getElementById('resetAll').addEventListener('click', () => {
+  const seed = S.seed;
+  S = { ...DEFAULTS, seed };
+  lastStyle = S.style;
+  Object.keys(sliderEls).forEach(syncSlider);
+  markSeg('styles', S.style); markSeg('pens', S.pen); markSeg('dpi', S.dpi); markSeg('bg', S.bg);
+  markInk();
+  schedule();
+  toast('Settings reset. Your text is unchanged.');
+});
 
 /* ---------------------------------------------------------------
    Render loop
@@ -949,6 +1035,7 @@ function render() {
   const pxW = Math.round(B.w / 25.4 * S.dpi), pxH = Math.round(B.h / 25.4 * S.dpi);
   document.getElementById('dims').textContent = `${B.w.toFixed(0)} × ${B.h.toFixed(0)} mm · ${pxW} × ${pxH} px at ${S.dpi} dpi`;
   document.getElementById('seedLabel').textContent = 'Variation #' + S.seed;
+  refreshResets();
   persist();
 }
 

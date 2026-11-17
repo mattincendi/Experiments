@@ -7,7 +7,9 @@ baseline drift, pen pressure), so the same letter never comes out twice the same
 Open `index.html` in a browser.
 
 - Styles: **Print**, joined-up **Cursive** (looped ascenders and descenders, script capitals),
-  **Hurried** (narrow, fast, rounded-off corners), **Rounded** (wide and upright), **Block capitals**
+  **Hurried** (narrow, fast, rounded-off corners), **Rounded** (wide and upright), **Block capitals**,
+  **Left-handed** (backslant, crossbars pulled right to left), **Child's** (big, wobbly, uneven, the odd reversed letter)
+- Every slider has a reset button; **Reset all settings** restores the defaults and keeps your text
 - Pens: gel, ballpoint, fountain (width follows stroke direction), pencil, felt tip
 - Sizes are in real millimetres (x-height, pen width, line spacing, line length)
 - **Save PNG** at 150/300/600 dpi, transparent or white; the DPI is written into the file so it prints at the size shown
