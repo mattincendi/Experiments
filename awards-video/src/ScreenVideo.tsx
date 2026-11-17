@@ -95,7 +95,7 @@ export const ScreenVideo: React.FC<ScreenProps> = ({screen, event}) => {
 		return (
 			<AbsoluteFill>
 				<Backdrop />
-				<MinorScreen award={screen.award} />
+				<MinorScreen award={screen.award} showWinner={screen.showWinner} />
 			</AbsoluteFill>
 		);
 	}

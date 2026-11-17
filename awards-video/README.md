@@ -7,7 +7,7 @@ Pre-rendered awards-night videos in navy and gold, at 1920×1080. You make every
   1. The intro, with music: "The nominees for" and then the category name in metallic gold.
   2. Each nominee's clip, full screen in a gold frame with their name in a lower-third.
   3. Between scenes, a gold light streak passes across.
-  4. It ends on the award title card ("And the award for… Best Newcomer") and **holds on that last frame** while the presenters announce the winner.
+  4. It ends on the award title card ("And the award for… Best Newcomer") and **holds on that last frame** while the presenters announce the winner. You can turn this card off per category; the last clip then fades to the background.
 - **Winner video** (`<category>-winner.mp4`, optional, kept separate so it stays secret):
   1. A reveal with its own fanfare: "Winner", the category, then the name with gold light rays and a burst of sparks.
   2. The winner's (longer) clip with a "Winner · Category" lower-third.
@@ -25,7 +25,10 @@ Pre-rendered awards-night videos in navy and gold, at 1920×1080. You make every
 - **Info / Wi-Fi:** a title plus up to 4 label/value lines. Values keep their exact spelling and case, so passwords are correct.
 - **Winners recap:** cycles through every winner you've set. It's a seamless loop of 48 seconds or a multiple of that, with at least 6 seconds per winner.
 
-**Minor awards** (`minor-*.mp4`): one 12-second card with the award name and all nominees (up to 8), holding on the last frame. Photos are optional and shown in round gold frames; nominees without a photo get a gold monogram of their initials.
+**Minor awards** (`minor-*.mp4`): one card with the award name and up to 10 nominees, holding on the last frame.
+- The nominees appear one at a time, every 3 seconds by default (adjustable), so the host can read each name.
+- Photos are optional and shown in round gold frames; nominees without a photo get a gold monogram of their initials.
+- **Winner version** (`minor-*-winner.mp4`, a separate file so it stays secret): mark the winner with ★. The card reads "The winner of", the other nominees dim, and the winner gets a gold glow, light rays and a "★ Winner ★" tag.
 
 The title, background and message screens are **48-second seamless loops**, so set the playback software to loop them. The background is a 3D field of gold sparkles that the camera drifts through, with depth of field. It's built so the last frame flows straight into the first.
 
@@ -49,7 +52,7 @@ In the app:
 - **Add several at once**: drop several clips onto the dashed area under the nominees and you get one nominee per clip, named after the file.
 - **Preview**: shows the finished video. It updates when you leave a text field or press Enter; Escape undoes what you typed.
 - **Winner**: on the Winner video tab, pick one of the nominees (or someone else), then drop in their longer clip.
-- **Render**: renders the video you're looking at. **Render everything** in the sidebar renders every nominee, winner, Up next and Award in progress video, all screens and all minor awards. Each one shows a progress bar, then **Watch** and **Download** links. Finished files are saved in the `out/` folder (**Open output folder**).
+- **Render**: renders the video you're looking at. **Render everything** in the sidebar renders every nominee, winner, Up next and Award in progress video, all screens, and all minor awards (plus their winner versions, where a winner is marked). Each one shows a progress bar, then **Watch** and **Download** links. Finished files are saved in the `out/` folder (**Open output folder**).
 
 Everything saves automatically to `data/awards.json`, and your clips are copied into `public/clips/`. Nothing leaves your computer. The first render downloads a small browser that's used to draw the frames, so it takes a little longer.
 

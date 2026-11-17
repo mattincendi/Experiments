@@ -23,12 +23,23 @@ export type Category = {
 	upNextKicker?: string;
 	/** Show the winner's name on the "Award in progress" loop. */
 	onStageShowWinner?: boolean;
+	/** End the nominees video on the award title card (default true). */
+	outroCard?: boolean;
 };
 
 export type EventInfo = {title: string; subtitle?: string};
 
 export type MinorNominee = {name: string; detail?: string; /** image file in public/clips/ */ photo?: string};
-export type MinorAward = {id: string; title: string; kicker?: string; nominees: MinorNominee[]};
+export type MinorAward = {
+	id: string;
+	title: string;
+	kicker?: string;
+	nominees: MinorNominee[];
+	/** Seconds between each nominee appearing, so the host can read the names. */
+	interval?: number;
+	/** Index into nominees of the winner, for the winner version. */
+	winner?: number;
+};
 export type RecapItem = {category: string; name: string; detail?: string};
 
 export type Screen =
@@ -47,7 +58,7 @@ export type Screen =
 	/** Cycles through the winners. `items` is filled in from the categories when rendering. */
 	| {type: 'recap'; title?: string; items?: RecapItem[]}
 	/** A minor award: title and all nominees on one card. */
-	| {type: 'minor'; award: MinorAward};
+	| {type: 'minor'; award: MinorAward; showWinner?: boolean};
 
 export type Project = {event: EventInfo; screens: Screen[]; categories: Category[]; minorAwards?: MinorAward[]};
 

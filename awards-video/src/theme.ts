@@ -27,7 +27,14 @@ export const FADE_FRAMES = 15;
 export const PLACEHOLDER_SECONDS = 6;
 
 export const UP_NEXT_SECONDS = 8;
-export const MINOR_SECONDS = 12;
+/** Minor awards: title first, then one nominee every `interval` seconds, then a hold. */
+export const MINOR_LEAD_FRAMES = 66;
+export const MINOR_DEFAULT_INTERVAL = 3;
+export const MINOR_HOLD_SECONDS = 4;
+export const MINOR_WINNER_SECONDS = 10;
+export const MINOR_MAX_NOMINEES = 10;
+/** A short tail on the background when a nominees video has no closing card. */
+export const END_TAIL_FRAMES = 30;
 /** Shortest time each winner is shown in the recap loop. */
 export const RECAP_MIN_SECONDS = 6;
 export const WINNER_REVEAL_SECONDS = 6;

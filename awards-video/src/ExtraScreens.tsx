@@ -1,7 +1,8 @@
 import React from 'react';
 import {AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {GoldText} from './GoldText';
-import {FONT, GOLD, GOLD_DARK, GOLD_LIGHT, IVORY, LOOP_FRAMES} from './theme';
+import {FONT, GOLD, GOLD_DARK, GOLD_LIGHT, IVORY, LOOP_FRAMES, MINOR_LEAD_FRAMES, MINOR_MAX_NOMINEES} from './theme';
+import {minorStep} from './frames';
 import type {MinorAward, RecapItem} from './types';
 
 const ease = Easing.bezier(0.22, 1, 0.36, 1);
@@ -117,69 +118,143 @@ const initials = (name: string) =>
 		.map((w) => w[0]!.toUpperCase())
 		.join('');
 
-/** Minor award: title, then every nominee on one card. Photos are optional. */
-export const MinorScreen: React.FC<{award: MinorAward}> = ({award}) => {
+/** Soft light rays behind the minor-award winner. */
+const WinnerRays: React.FC<{o: number; size: number; rot: number}> = ({o, size, rot}) => (
+	<div
+		style={{
+			position: 'absolute',
+			left: '50%',
+			top: '50%',
+			width: size,
+			height: size,
+			marginLeft: -size / 2,
+			marginTop: -size / 2,
+			borderRadius: '50%',
+			background: `repeating-conic-gradient(from ${rot}deg, rgba(243,220,149,0.22) 0deg 4deg, transparent 4deg 18deg)`,
+			WebkitMaskImage: 'radial-gradient(circle, black 10%, transparent 65%)',
+			maskImage: 'radial-gradient(circle, black 10%, transparent 65%)',
+			opacity: o,
+			pointerEvents: 'none',
+		}}
+	/>
+);
+
+/**
+ * Minor award: title, then the nominees one at a time (every `interval` seconds, so the
+ * host can read each name). With showWinner, everyone is shown at once and the winner is
+ * highlighted while the others dim. Photos are optional.
+ */
+export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = ({award, showWinner}) => {
 	const frame = useCurrentFrame();
-	const nominees = award.nominees.slice(0, 8);
+	const nominees = award.nominees.slice(0, MINOR_MAX_NOMINEES);
+	const winnerIdx = showWinner && award.winner !== undefined && award.winner < nominees.length ? award.winner : -1;
 	const withPhotos = nominees.some((n) => n.photo);
 	const lines = interpolate(frame, [8, 40], [0, 1], {...clamp, easing: ease});
 	const kick = interpolate(frame, [12, 40], [0, 1], {...clamp, easing: ease});
 	const titleIn = interpolate(frame, [22, 55], [0, 1], {...clamp, easing: ease});
 	const sweep = interpolate(frame, [60, 120], [-20, 120], clamp);
-	const rows = nominees.length > 4 ? 2 : 1;
+	const rows = nominees.length > 5 ? 2 : 1;
 	const perRow = Math.ceil(nominees.length / rows);
-	const photo = withPhotos ? (rows === 2 ? 170 : 230) : 0;
-	const nameSize = withPhotos ? (rows === 2 ? 34 : 40) : rows === 2 ? 54 : 62;
+	const wide = perRow >= 5;
+	const photo = withPhotos ? (rows === 2 ? (wide ? 140 : 165) : wide ? 190 : 230) : 0;
+	const nameSize = withPhotos ? (wide ? 30 : rows === 2 ? 34 : 40) : wide ? 40 : rows === 2 ? 54 : 62;
 	const titleSize = award.title.length > 24 ? 72 : 88;
+	const step = showWinner ? 3 : minorStep(award);
+	const first = showWinner ? 14 : MINOR_LEAD_FRAMES;
+	// Winner highlight
+	const hl = winnerIdx >= 0 ? interpolate(frame, [45, 80], [0, 1], {...clamp, easing: ease}) : 0;
+	const kicker = showWinner ? award.kicker ? award.kicker : 'The winner of' : award.kicker || 'The nominees for';
 
 	return (
 		<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', flexDirection: 'column'}}>
-			<div style={caps(28, {opacity: kick * 0.9, marginBottom: 22})}>{award.kicker || 'The nominees for'}</div>
+			<div style={caps(28, {opacity: kick * 0.9, marginBottom: 22})}>{kicker}</div>
 			<GoldText size={titleSize} sweep={sweep} tracking={`${0.2 - 0.06 * titleIn}em`} style={{opacity: titleIn, transform: `translateY(${(1 - titleIn) * 16}px)`}}>
 				{award.title}
 			</GoldText>
 			<div style={{width: 1000 * lines, height: 2, margin: `30px 0 ${withPhotos ? 50 : 70}px`, background: `linear-gradient(90deg, transparent, ${GOLD} 20%, ${GOLD_LIGHT} 50%, ${GOLD} 80%, transparent)`}} />
-			<div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: withPhotos ? 40 : 54}}>
-				{[nominees.slice(0, perRow), nominees.slice(perRow)].filter((r) => r.length).map((row, r) => (
-				<div key={r} style={{display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: withPhotos ? 70 : 100}}>
-				{row.map((n, k) => {
-					const i = r * perRow + k;
-					const at = 60 + i * 12;
-					const o = interpolate(frame, [at, at + 24], [0, 1], {...clamp, easing: ease});
-					return (
-						<div key={i} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: o, transform: `translateY(${(1 - o) * 20}px)`, maxWidth: withPhotos ? photo + 200 : 560}}>
-							{withPhotos ? (
-								<div
-									style={{
-										width: photo,
-										height: photo,
-										borderRadius: '50%',
-										padding: 4,
-										background: `linear-gradient(135deg, ${GOLD_LIGHT}, ${GOLD} 40%, ${GOLD_DARK})`,
-										boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-										marginBottom: 22,
-									}}
-								>
-									{n.photo ? (
-										<Img src={staticFile(`clips/${n.photo}`)} style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block'}} />
-									) : (
-										<div style={{width: '100%', height: '100%', borderRadius: '50%', background: '#0b1a33', display: 'grid', placeItems: 'center'}}>
-											<GoldText size={photo * 0.32} sweep={-20} tracking="0.06em">
-												{initials(n.name)}
-											</GoldText>
-										</div>
-									)}
-								</div>
-							) : null}
-							<GoldText size={nameSize} sweep={-20} tracking="0.1em" style={{whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.15}}>
-								{n.name}
-							</GoldText>
-							{n.detail ? <div style={caps(withPhotos ? 22 : 26, {marginTop: 10, opacity: 0.85, letterSpacing: '0.3em', textAlign: 'center'})}>{n.detail}</div> : null}
+			<div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: (withPhotos ? 40 : 54) + (winnerIdx >= 0 ? 30 : 0)}}>
+				{[nominees.slice(0, perRow), nominees.slice(perRow)]
+					.filter((r) => r.length)
+					.map((row, r) => (
+						<div key={r} style={{display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: withPhotos ? (wide ? 46 : 70) : wide ? 56 : 100}}>
+							{row.map((n, k) => {
+								const i = r * perRow + k;
+								const at = first + i * step;
+								const o = interpolate(frame, [at, at + 24], [0, 1], {...clamp, easing: ease});
+								const isWinner = i === winnerIdx;
+								const dim = winnerIdx >= 0 && !isWinner ? 1 - 0.7 * hl : 1;
+								const scale = isWinner ? 1 + 0.12 * hl : 1 - 0.04 * (1 - dim);
+								return (
+									<div
+										key={i}
+										style={{
+											position: 'relative',
+											display: 'flex',
+											flexDirection: 'column',
+											alignItems: 'center',
+											opacity: o * dim,
+											transform: `translateY(${(1 - o) * 20}px) scale(${scale})`,
+											maxWidth: withPhotos ? photo + 200 : wide ? 360 : 560,
+											zIndex: isWinner ? 2 : 1,
+										}}
+									>
+										{isWinner ? <WinnerRays o={hl} size={(photo || 260) * 3} rot={frame * 0.1} /> : null}
+										{withPhotos ? (
+											<div
+												style={{
+													position: 'relative',
+													width: photo,
+													height: photo,
+													borderRadius: '50%',
+													padding: 4,
+													background: `linear-gradient(135deg, ${GOLD_LIGHT}, ${GOLD} 40%, ${GOLD_DARK})`,
+													boxShadow: isWinner ? `0 0 ${50 * hl}px rgba(243,220,149,${0.7 * hl}), 0 8px 30px rgba(0,0,0,0.5)` : '0 8px 30px rgba(0,0,0,0.5)',
+													marginBottom: 22,
+												}}
+											>
+												{n.photo ? (
+													<Img src={staticFile(`clips/${n.photo}`)} style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block'}} />
+												) : (
+													<div style={{width: '100%', height: '100%', borderRadius: '50%', background: '#0b1a33', display: 'grid', placeItems: 'center'}}>
+														<GoldText size={photo * 0.32} sweep={-20} tracking="0.06em">
+															{initials(n.name)}
+														</GoldText>
+													</div>
+												)}
+											</div>
+										) : null}
+										<GoldText
+											size={nameSize}
+											sweep={isWinner ? interpolate(frame, [80, 140], [-20, 120], clamp) : -20}
+											tracking="0.1em"
+											style={{whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.15, position: 'relative'}}
+										>
+											{n.name}
+										</GoldText>
+										{n.detail ? (
+											<div style={caps(withPhotos ? 22 : 26, {marginTop: 10, opacity: 0.85, letterSpacing: '0.3em', textAlign: 'center', position: 'relative'})}>{n.detail}</div>
+										) : null}
+										{isWinner ? (
+											<div
+												style={caps(22, {
+													position: 'absolute',
+													top: '100%',
+													marginTop: 12,
+													color: GOLD_LIGHT,
+													fontWeight: 500,
+													letterSpacing: '0.5em',
+													opacity: hl,
+													whiteSpace: 'nowrap',
+												})}
+											>
+												★ Winner ★
+											</div>
+										) : null}
+									</div>
+								);
+							})}
 						</div>
-					);
-				})}
-				</div>
-				))}
+					))}
 			</div>
 		</AbsoluteFill>
 	);

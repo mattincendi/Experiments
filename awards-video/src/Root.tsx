@@ -1,7 +1,7 @@
 import React from 'react';
 import {CalculateMetadataFunction, Composition} from 'remotion';
 import {CategoryVideo} from './CategoryVideo';
-import {clipFrames, computeNomineeFrames, screenFrames, totalFrames, winnerTotalFrames} from './frames';
+import {clipFrames, computeNomineeFrames, hasOutro, screenFrames, totalFrames, winnerTotalFrames} from './frames';
 import {ScreenVideo} from './ScreenVideo';
 import {FPS, HEIGHT, WIDTH} from './theme';
 import type {Category, CategoryProps, EventInfo, ScreenProps, WinnerProps} from './types';
@@ -10,7 +10,7 @@ import data from '../data/awards.json';
 
 const categoryMeta: CalculateMetadataFunction<CategoryProps> = async ({props}) => {
 	const nomineeFrames = await computeNomineeFrames(props.category);
-	return {durationInFrames: totalFrames(nomineeFrames), props: {...props, nomineeFrames}};
+	return {durationInFrames: totalFrames(nomineeFrames, hasOutro(props.category)), props: {...props, nomineeFrames}};
 };
 const winnerMeta: CalculateMetadataFunction<WinnerProps> = async ({props}) => {
 	const f = await clipFrames(props.category.winner ?? {name: ''});

@@ -1,7 +1,7 @@
 import {staticFile} from 'remotion';
 import {getVideoMetadata} from '@remotion/media-utils';
-import {FPS, INTRO_SECONDS, MINOR_SECONDS, RECAP_MIN_SECONDS, UP_NEXT_SECONDS, LOOP_FRAMES, OUTRO_SECONDS, PLACEHOLDER_SECONDS, WINNER_END_SECONDS, WINNER_REVEAL_SECONDS} from './theme';
-import type {Category, Nominee, Project, RecapItem, Screen} from './types';
+import {END_TAIL_FRAMES, FPS, INTRO_SECONDS, MINOR_DEFAULT_INTERVAL, MINOR_HOLD_SECONDS, MINOR_LEAD_FRAMES, MINOR_MAX_NOMINEES, MINOR_WINNER_SECONDS, RECAP_MIN_SECONDS, UP_NEXT_SECONDS, LOOP_FRAMES, OUTRO_SECONDS, PLACEHOLDER_SECONDS, WINNER_END_SECONDS, WINNER_REVEAL_SECONDS} from './theme';
+import type {Category, MinorAward, Nominee, Project, RecapItem, Screen} from './types';
 
 /** Length of one clip segment in frames, from the clip itself. */
 export const clipFrames = async (n: Nominee): Promise<number> => {
@@ -20,8 +20,19 @@ export const clipFrames = async (n: Nominee): Promise<number> => {
 
 export const computeNomineeFrames = (category: Category) => Promise.all(category.nominees.map(clipFrames));
 
-export const totalFrames = (nomineeFrames: number[]) =>
-	INTRO_SECONDS * FPS + nomineeFrames.reduce((a, b) => a + b, 0) + OUTRO_SECONDS * FPS;
+export const hasOutro = (c: Pick<Category, 'outroCard'>) => c.outroCard !== false;
+
+export const totalFrames = (nomineeFrames: number[], outro = true) =>
+	INTRO_SECONDS * FPS + nomineeFrames.reduce((a, b) => a + b, 0) + (outro ? OUTRO_SECONDS * FPS : END_TAIL_FRAMES);
+
+/** Frames between minor-award nominees appearing. */
+export const minorStep = (m: MinorAward) => Math.round(Math.max(0.3, m.interval ?? MINOR_DEFAULT_INTERVAL) * FPS);
+
+export const minorFrames = (m: MinorAward, showWinner?: boolean) => {
+	if (showWinner) return MINOR_WINNER_SECONDS * FPS;
+	const n = Math.min(MINOR_MAX_NOMINEES, m.nominees.length);
+	return MINOR_LEAD_FRAMES + Math.max(0, n - 1) * minorStep(m) + 30 + MINOR_HOLD_SECONDS * FPS;
+};
 
 export const winnerTotalFrames = (clip: number) => (WINNER_REVEAL_SECONDS + WINNER_END_SECONDS) * FPS + clip;
 
@@ -31,7 +42,7 @@ export const screenFrames = (s: Screen) =>
 		: s.type === 'upnext'
 			? UP_NEXT_SECONDS * FPS
 			: s.type === 'minor'
-				? MINOR_SECONDS * FPS
+				? minorFrames(s.award, s.showWinner)
 				: s.type === 'recap'
 					? recapFrames((s.items ?? []).length)
 					: LOOP_FRAMES;
@@ -62,7 +73,7 @@ export const screenLabel = (s: Screen) =>
 									? `Info: ${s.title || 'untitled'}`
 									: s.type === 'recap'
 										? 'Winners recap'
-										: `Minor award: ${s.award.title}`;
+										: `Minor award: ${s.award.title}${s.showWinner ? ' (winner)' : ''}`;
 
 /** The winners, in category order, for the recap loop. */
 export const recapItems = (p: Pick<Project, 'categories'>): RecapItem[] =>
