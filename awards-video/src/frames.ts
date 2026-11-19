@@ -36,8 +36,12 @@ export const minorCombined = (m: MinorAward) => !!m.includeWinner && minorHasWin
 /** Frame by which every nominee has appeared. */
 export const minorRevealEnd = (m: MinorAward) => MINOR_LEAD_FRAMES + Math.max(0, Math.min(MINOR_MAX_NOMINEES, m.nominees.length) - 1) * minorStep(m) + 30;
 
-/** Frame where the winner highlight starts in a combined video. */
-export const minorWinnerAt = (m: MinorAward) => minorRevealEnd(m) + Math.round(Math.max(0, m.winnerDelay ?? MINOR_DEFAULT_WINNER_DELAY) * FPS);
+/** Combined video: frame where the line above changes to "The winner of" (just after the last nominee settles). */
+export const minorWinnerKickerAt = (m: MinorAward) => minorRevealEnd(m) + 15;
+
+/** Frame where the winner highlight starts in a combined video: after the pause, with at least 1 s of "The winner of…" first. */
+export const minorWinnerAt = (m: MinorAward) =>
+	Math.max(minorWinnerKickerAt(m) + 30, minorRevealEnd(m) + Math.round(Math.max(0, m.winnerDelay ?? MINOR_DEFAULT_WINNER_DELAY) * FPS));
 
 export const minorFrames = (m: MinorAward, showWinner?: boolean) => {
 	if (showWinner) return MINOR_WINNER_SECONDS * FPS;

@@ -28,7 +28,7 @@ Pre-rendered awards-night videos in navy and gold, at 1920×1080. You make every
 **Minor awards** (`minor-*.mp4`): one card with the award name and up to 10 nominees, holding on the last frame.
 - The nominees appear one at a time, every 3 seconds by default (adjustable), so the host can read each name.
 - Photos are optional and shown in round gold frames; nominees without a photo get a gold monogram of their initials.
-- **Winner in the same video (optional):** tick "Also reveal the winner at the end of the nominees video". After the last nominee and a pause (3 seconds by default, adjustable), the line above changes to "The winner of" and the winner is highlighted. That file then shows who won, so don't play it early.
+- **Winner in the same video (optional):** tick "Also reveal the winner at the end of the nominees video". Just after the last nominee appears, the line above changes to "The winner of" and every name dims slightly. After a pause (3 seconds by default, adjustable) the winner is highlighted. That file then shows who won, so don't play it early.
 - **Winner version** (`minor-*-winner.mp4`, a separate file so it stays secret): mark the winner with ★. The card reads "The winner of", the other nominees dim, and the winner gets a gold glow, light rays and a "★ Winner ★" tag.
 
 The title, background and message screens are **48-second seamless loops**, so set the playback software to loop them. The background is a 3D field of gold sparkles that the camera drifts through, with depth of field. It's built so the last frame flows straight into the first.

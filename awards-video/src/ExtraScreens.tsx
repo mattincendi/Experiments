@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {GoldText} from './GoldText';
 import {FONT, GOLD, GOLD_DARK, GOLD_LIGHT, IVORY, LOOP_FRAMES, MINOR_LEAD_FRAMES, MINOR_MAX_NOMINEES} from './theme';
-import {minorCombined, minorHasWinner, minorStep, minorWinnerAt} from './frames';
+import {minorCombined, minorHasWinner, minorStep, minorWinnerAt, minorWinnerKickerAt} from './frames';
 import type {MinorAward, RecapItem} from './types';
 
 const ease = Easing.bezier(0.22, 1, 0.36, 1);
@@ -166,8 +166,11 @@ export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = 
 	const first = showWinner ? 14 : MINOR_LEAD_FRAMES;
 	// Winner highlight
 	const hl = winnerIdx >= 0 ? interpolate(frame, [hlStart, hlStart + 35], [0, 1], {...clamp, easing: ease}) : 0;
-	// In a combined video the line above the title changes from "The nominees for" to "The winner of".
-	const swap = combined ? interpolate(frame, [hlStart - 12, hlStart + 12], [0, 1], clamp) : showWinner ? 1 : 0;
+	// In a combined video the line above changes to "The winner of" well before the reveal,
+	// and every name dims a little together during the pause, to build tension.
+	const kickAt = combined ? minorWinnerKickerAt(award) : 0;
+	const swap = combined ? interpolate(frame, [kickAt - 12, kickAt + 12], [0, 1], clamp) : showWinner ? 1 : 0;
+	const hush = combined ? interpolate(frame, [kickAt, kickAt + 30, hlStart, hlStart + 20], [0, 1, 1, 0], clamp) : 0;
 	const kicker = swap >= 0.5 ? 'The winner of' : award.kicker || 'The nominees for';
 	const kickerFade = combined ? Math.abs(1 - 2 * swap) : 1;
 
@@ -188,7 +191,7 @@ export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = 
 								const at = first + i * step;
 								const o = interpolate(frame, [at, at + 24], [0, 1], {...clamp, easing: ease});
 								const isWinner = i === winnerIdx;
-								const dim = winnerIdx >= 0 && !isWinner ? 1 - 0.7 * hl : 1;
+								const dim = (winnerIdx >= 0 && !isWinner ? 1 - 0.7 * hl : 1) * (1 - 0.25 * hush);
 								const scale = isWinner ? 1 + 0.12 * hl : 1 - 0.04 * (1 - dim);
 								return (
 									<div

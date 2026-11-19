@@ -873,7 +873,7 @@ const MinorView: React.FC<{
 						{award.includeWinner && winnerSet ? (
 							<>
 								<label style={{maxWidth: 260}}>
-									Pause before the winner (sec)
+									Seconds of “The winner of…” before the reveal
 									<NumField
 										min={0}
 										step={0.5}
