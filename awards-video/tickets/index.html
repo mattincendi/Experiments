@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awards Night Tickets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/*
+ * Tickets in the awards-video look (navy, metallic gold, Jost).
+ * One A4 sheet = three tickets of 210 x 99 mm, cut crosswise.
+ * Colours match src/theme.ts.
+ */
+@page { size: A4 portrait; margin: 0; }
+
+:root {
+	--navy-deep: #050d1f;
+	--navy: #0b1a33;
+	--navy-light: #16305a;
+	--gold: #c9a24a;
+	--gold-light: #f3dc95;
+	--gold-dark: #8a6a26;
+	--ivory: #f4efe3;
+	--font: 'Jost', 'Futura PT', 'Futura', 'Century Gothic', sans-serif;
+
+	/* white edge round each ticket; 0 for full bleed */
+	--edge: 5mm;
+
+	/* app chrome (screen only) */
+	--ui-bg: #0e1422;
+	--ui-panel: #151d2f;
+	--ui-line: #263252;
+	--ui-text: #e8e4da;
+	--ui-muted: #93a0bb;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+	background: var(--ui-bg);
+	color: var(--ui-text);
+	font-family: var(--font);
+	-webkit-print-color-adjust: exact;
+	print-color-adjust: exact;
+}
+
+/* ------------------------------------------------------------ editor (screen only) */
+.layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 100vh; }
+.panel {
+	background: var(--ui-panel);
+	border-right: 1px solid var(--ui-line);
+	padding: 22px 20px 40px;
+	overflow: auto;
+	max-height: 100vh;
+	position: sticky;
+	top: 0;
+}
+.panel h1 { font-weight: 500; font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 4px; color: var(--gold-light); }
+.panel .lede { color: var(--ui-muted); font-size: 14px; margin: 0 0 18px; line-height: 1.45; }
+.panel h2 { font-size: 12px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ui-muted); margin: 22px 0 10px; }
+.panel label { display: grid; gap: 4px; font-size: 13px; color: var(--ui-muted); margin-bottom: 10px; }
+.panel input, .panel textarea, .panel select {
+	font: inherit; font-size: 15px; color: var(--ui-text);
+	background: var(--ui-bg); border: 1px solid var(--ui-line); border-radius: 6px; padding: 7px 9px; width: 100%;
+}
+.panel textarea { min-height: 110px; resize: vertical; font-size: 14px; }
+.panel input:focus, .panel textarea:focus, .panel select:focus { outline: 2px solid var(--gold); outline-offset: -1px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.seg button {
+	font: inherit; font-size: 13px; padding: 8px 6px; border-radius: 6px; cursor: pointer;
+	background: var(--ui-bg); color: var(--ui-muted); border: 1px solid var(--ui-line); line-height: 1.25;
+}
+.seg button[aria-pressed="true"] { border-color: var(--gold); color: var(--ui-text); background: #1d2742; }
+.seg button small { display: block; font-size: 11px; color: var(--ui-muted); }
+.check { display: flex !important; grid-template-columns: none; align-items: center; gap: 8px; color: var(--ui-text) !important; }
+.check input { width: auto; }
+.hint { font-size: 12px; color: var(--ui-muted); line-height: 1.45; margin: -4px 0 10px; }
+.print {
+	font: inherit; font-weight: 500; font-size: 15px; letter-spacing: 0.06em; width: 100%;
+	margin-top: 18px; padding: 11px; border-radius: 8px; border: 0; cursor: pointer;
+	background: linear-gradient(100deg, var(--gold-dark), var(--gold) 30%, var(--gold-light) 50%, var(--gold) 70%, var(--gold-dark));
+	color: var(--navy-deep);
+}
+.howto { font-size: 12.5px; color: var(--ui-muted); line-height: 1.5; margin: 12px 0 0; padding-left: 18px; }
+.howto b { color: var(--ui-text); font-weight: 500; }
+.summary { font-size: 13px; color: var(--gold-light); margin-top: 10px; text-align: center; }
+
+.preview { padding: 28px 16px 60px; overflow: auto; }
+.sheets { zoom: var(--zoom, 1); width: 210mm; margin: 0 auto; }
+
+/* ------------------------------------------------------------ the sheet */
+.page {
+	width: 210mm;
+	height: 297mm;
+	background: #fff;
+	position: relative;
+	overflow: hidden;
+	margin: 0 auto 12mm;
+	box-shadow: 0 6px 30px rgba(0, 0, 0, 0.5);
+}
+.slot { position: absolute; left: 0; width: 210mm; height: 99mm; }
+.slot:nth-child(1) { top: 0; }
+.slot:nth-child(2) { top: 99mm; }
+.slot:nth-child(3) { top: 198mm; }
+
+/* cut guides: short ticks in the white edge at both sides of each cut */
+.cut { position: absolute; left: 0; right: 0; height: 0; pointer-events: none; }
+.cut::before, .cut::after { content: ''; position: absolute; top: -0.1mm; width: calc(var(--edge) - 1.2mm); border-top: 0.2mm solid #9aa0aa; }
+.cut::before { left: 0; }
+.cut::after { right: 0; }
+.cut.c1 { top: 99mm; }
+.cut.c2 { top: 198mm; }
+.bleed .cut { display: none; }
+
+.ticket {
+	position: absolute;
+	inset: var(--edge);
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 54mm;
+	overflow: hidden;
+	color: var(--ivory);
+	background:
+		radial-gradient(ellipse 55% 75% at 36% 48%, var(--navy-light) 0%, var(--navy) 50%, var(--navy-deep) 100%);
+}
+.bleed .ticket { inset: 0; }
+.sparkles { position: absolute; inset: 0; width: 100%; height: 100%; }
+.vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 85% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%); }
+
+.main, .stub { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.main { padding: 7mm 9mm; }
+
+/* gold hairline frame with corner diamonds */
+.frame { position: absolute; inset: 3.4mm 2.4mm 3.4mm 3.4mm; border: 0.25mm solid rgba(201, 162, 74, 0.75); pointer-events: none; }
+.frame i { position: absolute; width: 1.8mm; height: 1.8mm; background: var(--gold-light); transform: rotate(45deg); }
+.frame i:nth-child(1) { left: -0.95mm; top: -0.95mm; }
+.frame i:nth-child(2) { right: -0.95mm; top: -0.95mm; }
+.frame i:nth-child(3) { left: -0.95mm; bottom: -0.95mm; }
+.frame i:nth-child(4) { right: -0.95mm; bottom: -0.95mm; }
+
+.kicker { font-weight: 300; font-size: 8.5pt; letter-spacing: 0.42em; text-transform: uppercase; opacity: 0.9; margin-right: -0.42em; }
+
+/* Metallic gold lettering is drawn at 600 dpi on a canvas: gradient text in PDFs breaks in some viewers and printers. */
+.goldimg { display: block; max-width: 100%; height: auto; }
+.title { display: flex; justify-content: center; width: 100%; padding: 0.6mm 0; }
+.subtitle { font-weight: 300; font-size: 11pt; letter-spacing: 0.5em; margin-right: -0.5em; text-transform: uppercase; margin-top: 1.2mm; }
+
+.rule { position: relative; width: 78%; height: 0.3mm; margin: 3.4mm 0; background: linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold-light) 50%, var(--gold) 80%, transparent); }
+.rule::after { content: ''; position: absolute; left: 50%; top: 50%; width: 1.7mm; height: 1.7mm; background: var(--gold-light); transform: translate(-50%, -50%) rotate(45deg); }
+
+.details { display: flex; justify-content: center; gap: 0; width: 100%; }
+.detail { flex: 1 1 0; min-width: 0; padding: 0 2.5mm; }
+.detail + .detail { border-left: 0.25mm solid rgba(201, 162, 74, 0.5); }
+.label { font-size: 6pt; font-weight: 500; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.9mm; }
+.value { font-size: 8.6pt; font-weight: 400; letter-spacing: 0.04em; line-height: 1.3; }
+.value small { display: block; font-size: 7pt; font-weight: 300; opacity: 0.8; }
+.dress { font-size: 6.6pt; font-weight: 400; letter-spacing: 0.34em; text-transform: uppercase; margin-top: 3mm; color: var(--gold-light); margin-right: -0.34em; }
+.guest-main { font-size: 7.4pt; letter-spacing: 0.08em; margin-top: 2.6mm; opacity: 0.95; }
+.guest-main b { font-weight: 500; letter-spacing: 0.04em; }
+.no-main { position: absolute; right: 6mm; bottom: 5.4mm; font-size: 6.2pt; letter-spacing: 0.22em; color: var(--gold); }
+
+/* tear-off stub */
+.stub { padding: 7mm 5mm 7mm 6mm; }
+.perf { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-left: 0.35mm dashed rgba(201, 162, 74, 0.8); }
+.notch { position: absolute; left: calc(-1 * 3mm); width: 6mm; height: 6mm; border-radius: 50%; background: #fff; z-index: 2; }
+.notch.t { top: -3mm; }
+.notch.b { bottom: -3mm; }
+.stub .kicker { font-size: 7pt; letter-spacing: 0.36em; margin-right: -0.36em; }
+.stub .small-title { font-size: 6.2pt; letter-spacing: 0.3em; margin-right: -0.3em; text-transform: uppercase; opacity: 0.75; margin-top: 1mm; line-height: 1.4; text-wrap: balance; }
+.num { display: flex; justify-content: center; margin: 2.2mm 0 1.4mm; }
+.num-label { font-size: 6pt; letter-spacing: 0.4em; margin-right: -0.4em; color: var(--gold); text-transform: uppercase; }
+.stub .rule { width: 70%; margin: 3.2mm 0; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; width: 100%; }
+.field { text-align: left; }
+.field .label { margin-bottom: 0.6mm; letter-spacing: 0.26em; }
+.field .line { border-bottom: 0.25mm solid rgba(201, 162, 74, 0.7); height: 6.2mm; font-size: 11pt; font-weight: 500; line-height: 6mm; text-align: center; color: var(--gold-light); }
+.stub .guest { font-size: 7.4pt; font-weight: 400; letter-spacing: 0.06em; margin-top: 3mm; line-height: 1.3; max-width: 100%; overflow-wrap: anywhere; }
+
+/* ------------------------------------------------------------ ivory (ink-saving) */
+.ivory .ticket { color: var(--navy); background: radial-gradient(ellipse 70% 90% at 36% 48%, #fffdf7 0%, #faf6ec 55%, #f1eadb 100%); }
+.ivory .vignette { background: radial-gradient(ellipse 85% 90% at 50% 50%, transparent 60%, rgba(138, 106, 38, 0.12) 100%); }
+.ivory .frame { border-color: rgba(138, 106, 38, 0.7); }
+.ivory .frame i, .ivory .rule::after { background: var(--gold-dark); }
+.ivory .rule { background: linear-gradient(90deg, transparent, var(--gold-dark) 20%, var(--gold) 50%, var(--gold-dark) 80%, transparent); }
+.ivory .label, .ivory .num-label, .ivory .no-main { color: var(--gold-dark); }
+.ivory .dress { color: var(--gold-dark); }
+.ivory .field .line { color: var(--navy); border-color: rgba(138, 106, 38, 0.7); }
+.ivory .perf { border-color: rgba(138, 106, 38, 0.7); }
+.ivory .detail + .detail { border-color: rgba(138, 106, 38, 0.45); }
+
+.empty-slot { position: absolute; inset: var(--edge); border: 0.3mm dashed #d6d6d6; display: flex; align-items: center; justify-content: center; color: #b4b4b4; font-size: 9pt; letter-spacing: 0.2em; text-transform: uppercase; }
+
+/* ------------------------------------------------------------ print */
+@media print {
+	body { background: none; }
+	.layout { display: block; }
+	.panel { display: none; }
+	.preview { padding: 0; overflow: visible; }
+	.sheets { zoom: 1; width: auto; }
+	.page { margin: 0; box-shadow: none; break-after: page; }
+	.page:last-child { break-after: auto; }
+	.empty-slot { display: none; }
+}
+
+@media (max-width: 760px) {
+	.layout { grid-template-columns: 1fr; }
+	.panel { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--ui-line); }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+	<aside class="panel">
+		<h1>Tickets</h1>
+		<p class="lede">Three tickets per A4 sheet, cut crosswise into 210 × 99 mm. Each has a tear-off stub with its number.</p>
+
+		<h2>Event</h2>
+		<label>Kicker <input id="kicker"></label>
+		<label>Event name <input id="title"></label>
+		<label>Subtitle <input id="subtitle"></label>
+
+		<h2>Details</h2>
+		<div class="row2">
+			<label>Date <input id="date"></label>
+			<label>Day / year <input id="date2"></label>
+		</div>
+		<div class="row2">
+			<label>Time <input id="time"></label>
+			<label>Second line <input id="time2"></label>
+		</div>
+		<div class="row2">
+			<label>Venue <input id="venue"></label>
+			<label>Address <input id="venue2"></label>
+		</div>
+		<label>Dress code (optional) <input id="dress"></label>
+		<label>Stub label <input id="stub"></label>
+
+		<h2>Tickets</h2>
+		<div class="row2">
+			<label>How many <input id="count" type="number" min="1" max="600"></label>
+			<label>First number <input id="start" type="number" min="0"></label>
+		</div>
+		<label>Guest list (optional)
+			<textarea id="guests" placeholder="Jane Smith&#9;4&#9;2&#10;Sam Lee, 4, 3&#10;Alex Morgan"></textarea>
+		</label>
+		<p class="hint">One guest per line: name, then table and seat if you have them. Separate them with commas, or paste straight from a spreadsheet. With a list, you get one ticket per guest.</p>
+		<label class="check"><input id="fields" type="checkbox"> Table and seat boxes on the stub</label>
+
+		<h2>Look</h2>
+		<div class="seg" id="theme">
+			<button data-v="navy">Navy &amp; gold<small>like the videos</small></button>
+			<button data-v="ivory">Ivory &amp; gold<small>uses far less ink</small></button>
+		</div>
+		<div class="seg" id="edge">
+			<button data-v="frame">White edge<small>any printer</small></button>
+			<button data-v="bleed">Full bleed<small>print shop</small></button>
+		</div>
+
+		<button class="print" id="print">Print / Save as PDF</button>
+		<div class="summary" id="summary"></div>
+		<ol class="howto">
+			<li>In the print dialog choose <b>A4</b>, margins <b>None</b>, scale <b>100%</b> (not "Fit"), and turn on <b>Background graphics</b>.</li>
+			<li>Use thick paper or card (200–300 gsm) if your printer takes it.</li>
+			<li>Cut at the small grey ticks, 99 mm and 198 mm from the top. A guillotine or craft knife and ruler gives the cleanest edge.</li>
+			<li>Optional: score the dashed line before the stub so it tears off neatly.</li>
+		</ol>
+	</aside>
+
+	<main class="preview">
+		<div class="sheets" id="sheets"></div>
+	</main>
+</div>
+
+<script>
+(() => {
+	const DEFAULTS = {
+		kicker: 'You are invited to',
+		title: 'Awards Night',
+		subtitle: '2026',
+		date: '12 December',
+		date2: 'Saturday 2026',
+		time: 'Doors 6:30 pm',
+		time2: 'Ceremony 7:30 pm',
+		venue: 'The Grand Hall',
+		venue2: '1 Example Street',
+		dress: 'Black tie',
+		stub: 'Admit one',
+		count: 9,
+		start: 1,
+		guests: '',
+		fields: true,
+		theme: 'navy',
+		edge: 'frame',
+	};
+	const KEY = 'awards-tickets-v1';
+	const TEXT = ['kicker', 'title', 'subtitle', 'date', 'date2', 'time', 'time2', 'venue', 'venue2', 'dress', 'stub', 'guests'];
+
+	let saved = null;
+	try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch {}
+	const state = {...DEFAULTS, ...(saved || {})};
+	const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+
+	const $ = (id) => document.getElementById(id);
+	const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+
+	// Small seeded random, so each ticket's sparkles are its own and don't change between previews.
+	const rng = (seed) => () => {
+		seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+		let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+
+	// A still of the video backdrop: sharp gold sparks, a few soft bokeh discs, fewer behind the text.
+	const COLORS = ['243,220,149', '255,244,214', '201,162,74', '170,195,240'];
+	const sparkles = (seed, ivory) => {
+		const r = rng(seed * 7919 + 17);
+		const W = 210, H = 99;
+		const pick = () => { const c = r(); return COLORS[c < 0.45 ? 0 : c < 0.7 ? 1 : c < 0.88 ? 2 : 3]; };
+		const ink = (rgb) => (ivory ? (rgb === '170,195,240' ? '110,140,190' : '176,138,55') : rgb);
+		let defs = '', body = '';
+		// keep the middle of the main panel calmer so the text reads
+		const ell = (x, y, cx, cy, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+		const calm = (x, y) => {
+			const d = Math.min(ell(x, y, 80, 49, 72, 38), ell(x, y, 183, 50, 24, 32));
+			return Math.min(1, 0.12 + 0.88 * Math.min(1, d));
+		};
+		let g = 0;
+		for (let i = 0; i < 16; i++) {
+			const x = r() * W, y = r() * H, rad = 2.5 + r() ** 2 * 8, rgb = ink(pick());
+			const a = (ivory ? 0.10 : 0.13) * (0.5 + r() * 0.5) * calm(x, y);
+			defs += `<radialGradient id="b${seed}-${g}"><stop offset="0" stop-color="rgb(${rgb})" stop-opacity="${(a * 0.7).toFixed(3)}"/><stop offset="0.82" stop-color="rgb(${rgb})" stop-opacity="${a.toFixed(3)}"/><stop offset="1" stop-color="rgb(${rgb})" stop-opacity="0"/></radialGradient>`;
+			body += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${rad.toFixed(2)}" fill="url(#b${seed}-${g++})"/>`;
+		}
+		for (let i = 0; i < 150; i++) {
+			const x = r() * W, y = r() * H, core = 0.12 + r() ** 3 * 0.5, rgb = ink(pick());
+			const a = (0.45 + r() * 0.55) * calm(x, y) * (ivory ? 0.75 : 1);
+			const rad = core * 3.2;
+			defs += `<radialGradient id="s${seed}-${g}"><stop offset="0" stop-color="rgb(${rgb})" stop-opacity="${a.toFixed(3)}"/><stop offset="0.28" stop-color="rgb(${rgb})" stop-opacity="${(a * 0.5).toFixed(3)}"/><stop offset="1" stop-color="rgb(${rgb})" stop-opacity="0"/></radialGradient>`;
+			body += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${rad.toFixed(2)}" fill="url(#s${seed}-${g++})"/>`;
+		}
+		// a handful of four-point glints on the brightest sparks
+		for (let i = 0; i < 5; i++) {
+			const x = r() * W, y = r() * H, s = 1.6 + r() * 2.2;
+			if (calm(x, y) < 1) continue; // only away from the text
+			const c = ivory ? 'rgb(176,138,55)' : 'rgb(255,246,220)';
+			body += `<path d="M${x} ${y - s}Q${x} ${y} ${x + s} ${y}Q${x} ${y} ${x} ${y + s}Q${x} ${y} ${x - s} ${y}Q${x} ${y} ${x} ${y - s}Z" fill="${c}" opacity="${ivory ? 0.55 : 0.85}"/>`;
+		}
+		return `<svg class="sparkles" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>${defs}</defs>${body}</svg>`;
+	};
+
+	const parseGuests = (text) =>
+		text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
+			const parts = (l.includes('\t') ? l.split('\t') : l.split(',')).map((p) => p.trim());
+			return {name: parts[0] || '', table: parts[1] || '', seat: parts[2] || ''};
+		});
+
+	const ticketHtml = (n, digits, guest) => {
+		const s = state;
+		const no = String(n).padStart(digits, '0');
+		const detail = (label, a, b) => (a || b) ? `<div class="detail"><div class="label">${label}</div><div class="value">${esc(a)}${b ? `<small>${esc(b)}</small>` : ''}</div></div>` : '';
+		const details = detail('Date', s.date, s.date2) + detail('Time', s.time, s.time2) + detail('Venue', s.venue, s.venue2);
+		const showFields = s.fields || (guest && (guest.table || guest.seat));
+		return `
+		<div class="ticket">
+			${sparkles(n + 1, s.theme === 'ivory')}
+			<div class="vignette"></div>
+			<section class="main">
+				<div class="frame"><i></i><i></i><i></i><i></i></div>
+				${s.kicker ? `<div class="kicker">${esc(s.kicker)}</div>` : ''}
+				<div class="rule"></div>
+				<div class="title">${goldText(s.title, {size: 45.3, size2: 37, track: 0.16, maxW: titleWidth()})}</div>
+				${s.subtitle ? `<div class="subtitle">${esc(s.subtitle)}</div>` : ''}
+				<div class="rule"></div>
+				${details ? `<div class="details">${details}</div>` : ''}
+				${guest && guest.name ? `<div class="guest-main">Reserved for <b>${esc(guest.name)}</b></div>` : s.dress ? `<div class="dress">${esc(s.dress)}</div>` : ''}
+				<div class="no-main">Nº ${no}</div>
+			</section>
+			<section class="stub">
+				<div class="perf"></div>
+				<div class="notch t"></div><div class="notch b"></div>
+				${s.stub ? `<div class="kicker">${esc(s.stub)}</div>` : ''}
+				<div class="num">${goldText(no, {size: 34.7, track: 0.06, maxW: 150})}</div>
+				<div class="num-label">Ticket</div>
+				<div class="rule"></div>
+				${showFields ? `<div class="fields">
+					<div class="field"><div class="label">Table</div><div class="line">${esc(guest?.table || '')}</div></div>
+					<div class="field"><div class="label">Seat</div><div class="line">${esc(guest?.seat || '')}</div></div>
+				</div>` : `<div class="small-title">${esc(s.title)}${s.subtitle ? ` · ${esc(s.subtitle)}` : ''}</div>`}
+				${guest && guest.name ? `<div class="guest">${esc(guest.name)}</div>` : ''}
+			</section>
+		</div>`;
+	};
+
+	// Metallic gold lettering, drawn at 600 dpi and placed as an image. Titles much
+	// wider than the space go onto two balanced lines; the image then scales to fit.
+	const PX = 96 / 25.4;
+	const DPI_SCALE = 600 / 96;
+	const titleWidth = () => (210 - 2 * (state.edge === 'bleed' ? 0 : 5) - 54 - 18) * PX;
+	const GOLD_STOPS = {
+		navy: [[0, '#8a6a26'], [0.22, '#c9a24a'], [0.42, '#f3dc95'], [0.48, '#fff6dc'], [0.54, '#f3dc95'], [0.7, '#c9a24a'], [1, '#8a6a26']],
+		ivory: [[0, '#6e5219'], [0.25, '#8a6a26'], [0.45, '#b08a37'], [0.5, '#c9a24a'], [0.55, '#b08a37'], [0.75, '#8a6a26'], [1, '#6e5219']],
+	};
+	let goldCache = new Map();
+	const goldText = (raw, {size, size2 = size, track, maxW, weight = 500}) => {
+		const text = String(raw).toUpperCase().trim() || ' ';
+		const theme = state.theme === 'ivory' ? 'ivory' : 'navy';
+		const key = [text, size, track, maxW, theme].join('|');
+		if (goldCache.has(key)) return goldCache.get(key);
+
+		const ctx = document.createElement('canvas').getContext('2d');
+		const hasLS = 'letterSpacing' in ctx;
+		const setFont = (c, sz) => {
+			c.font = `${weight} ${sz}px Jost, 'Futura PT', Futura, 'Century Gothic', sans-serif`;
+			if (hasLS) c.letterSpacing = `${track * sz}px`;
+		};
+		// ink extents of a line; without canvas letterSpacing, place letters one by one
+		const measure = (line, sz) => {
+			setFont(ctx, sz);
+			if (hasLS) {
+				const m = ctx.measureText(line);
+				return {left: m.actualBoundingBoxLeft, w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight, asc: m.actualBoundingBoxAscent, desc: m.actualBoundingBoxDescent};
+			}
+			const m = ctx.measureText(line);
+			const w = [...line].reduce((t, ch) => t + ctx.measureText(ch).width, 0) + track * sz * (line.length - 1);
+			return {left: 0, w, asc: m.actualBoundingBoxAscent, desc: m.actualBoundingBoxDescent};
+		};
+		const layout = (lines, sz) => {
+			const ms = lines.map((l) => measure(l, sz));
+			return {lines, sz, ms, w: Math.max(...ms.map((m) => m.w)), asc: Math.max(...ms.map((m) => m.asc)), desc: Math.max(...ms.map((m) => m.desc))};
+		};
+		let L = layout([text], size);
+		if (L.w > maxW * 1.15 && text.includes(' ')) {
+			const words = text.split(/\s+/);
+			let best = 1, bestDiff = Infinity;
+			for (let k = 1; k < words.length; k++) {
+				const d = Math.abs(words.slice(0, k).join(' ').length - words.slice(k).join(' ').length);
+				if (d < bestDiff) { bestDiff = d; best = k; }
+			}
+			L = layout([words.slice(0, best).join(' '), words.slice(best).join(' ')], size2);
+		}
+		const pad = Math.ceil(L.sz * 0.06);
+		const pitch = L.sz * 1.12;
+		const W = Math.ceil(L.w + pad * 2);
+		const H = Math.ceil(L.asc + L.desc + pitch * (L.lines.length - 1) + pad * 2);
+		const canvas = document.createElement('canvas');
+		canvas.width = Math.ceil(W * DPI_SCALE);
+		canvas.height = Math.ceil(H * DPI_SCALE);
+		const c = canvas.getContext('2d');
+		c.scale(DPI_SCALE, DPI_SCALE);
+		const grad = c.createLinearGradient(0, 0, W, H * 0.35 + W * 0.05);
+		for (const [o, col] of GOLD_STOPS[theme]) grad.addColorStop(o, col);
+		c.fillStyle = grad;
+		c.textBaseline = 'alphabetic';
+		setFont(c, L.sz);
+		L.lines.forEach((line, i) => {
+			const m = L.ms[i];
+			let x = pad + (L.w - m.w) / 2 + m.left;
+			const y = pad + L.asc + i * pitch;
+			if (hasLS) c.fillText(line, x, y);
+			else for (const ch of line) { c.fillText(ch, x, y); x += c.measureText(ch).width + track * L.sz; }
+		});
+		const out = `<img class="goldimg" src="${canvas.toDataURL('image/png')}" width="${W}" height="${H}" alt="${esc(text)}">`;
+		goldCache.set(key, out);
+		return out;
+	};
+
+	const render = () => {
+		const guests = parseGuests(state.guests || '');
+		const start = Math.max(0, parseInt(state.start, 10) || 0);
+		const count = guests.length || Math.min(600, Math.max(1, parseInt(state.count, 10) || 1));
+		const digits = Math.max(3, String(start + count - 1).length);
+		const pages = Math.ceil(count / 3);
+		const root = $('sheets');
+		root.className = `sheets ${state.theme === 'ivory' ? 'ivory' : ''} ${state.edge === 'bleed' ? 'bleed' : ''}`;
+		document.documentElement.style.setProperty('--edge', state.edge === 'bleed' ? '0mm' : '5mm');
+		let html = '';
+		for (let p = 0; p < pages; p++) {
+			html += '<div class="page">';
+			for (let k = 0; k < 3; k++) {
+				const i = p * 3 + k;
+				html += `<div class="slot">${i < count ? ticketHtml(start + i, digits, guests[i]) : '<div class="empty-slot">Empty</div>'}</div>`;
+			}
+			html += '<div class="cut c1"></div><div class="cut c2"></div></div>';
+		}
+		root.innerHTML = html;
+		$('summary').textContent = `${count} ticket${count === 1 ? '' : 's'} on ${pages} sheet${pages === 1 ? '' : 's'} of A4`;
+		fitZoom();
+	};
+
+	const fitZoom = () => {
+		const avail = document.querySelector('.preview').clientWidth - 32;
+		const mm = 96 / 25.4;
+		const z = Math.min(1, avail / (210 * mm));
+		document.documentElement.style.setProperty('--zoom', z.toFixed(3));
+	};
+
+	// wire up the form
+	for (const k of TEXT) {
+		const el = $(k);
+		el.value = state[k] ?? '';
+		el.addEventListener('input', () => { state[k] = el.value; save(); render(); });
+	}
+	for (const k of ['count', 'start']) {
+		const el = $(k);
+		el.value = state[k];
+		el.addEventListener('input', () => { state[k] = el.value; save(); render(); });
+	}
+	$('fields').checked = !!state.fields;
+	$('fields').addEventListener('change', (e) => { state.fields = e.target.checked; save(); render(); });
+	const seg = (id) => {
+		const btns = [...$(id).querySelectorAll('button')];
+		const sync = () => btns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === state[id])));
+		btns.forEach((b) => b.addEventListener('click', () => { state[id] = b.dataset.v; save(); sync(); render(); }));
+		sync();
+	};
+	seg('theme');
+	seg('edge');
+	$('print').addEventListener('click', () => window.print());
+	window.addEventListener('resize', fitZoom);
+	window.addEventListener('beforeprint', () => document.documentElement.style.setProperty('--zoom', '1'));
+	window.addEventListener('afterprint', fitZoom);
+
+	render();
+	// Measure again once the Jost font has loaded (letters change width).
+	if (document.fonts && document.fonts.load) {
+		Promise.all([document.fonts.load("500 40px Jost"), document.fonts.ready]).then(() => { goldCache = new Map(); render(); }).catch(() => {});
+	}
+
+	// Opened from the awards app: take the event name from the project, unless it was changed here.
+	if (!saved && location.protocol.startsWith('http')) {
+		fetch('/api/project').then((r) => (r.ok ? r.json() : null)).then((p) => {
+			if (!p || !p.event) return;
+			if (p.event.title) { state.title = p.event.title; $('title').value = p.event.title; }
+			if (p.event.subtitle != null) { state.subtitle = p.event.subtitle; $('subtitle').value = p.event.subtitle; }
+			render();
+		}).catch(() => {});
+	}
+})();
+</script>
+</body>
+</html>

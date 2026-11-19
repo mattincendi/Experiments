@@ -35,6 +35,15 @@ The title, background and message screens are **48-second seamless loops**, so s
 
 The font is **Jost**, a free geometric font close to Futura. Long titles and names wrap onto balanced lines and get slightly smaller, so nothing runs off the screen.
 
+## Printed tickets
+
+`tickets/index.html` makes matching paper tickets: three per A4 sheet, cut crosswise into 210 × 99 mm, each with a numbered tear-off stub. Open it from the app (**Print tickets** in the sidebar, which fills in your event name) or double-click the file.
+
+- Set the event name, date, time, venue and dress code, and how many tickets you need, or paste a guest list (name, table, seat, one guest per line, straight from a spreadsheet) to get one ticket per guest.
+- **Navy & gold** matches the videos. **Ivory & gold** uses far less ink.
+- **White edge** leaves a 5 mm white border round every ticket, so home printers that can't print to the edge still give even tickets. **Full bleed** is for a print shop.
+- Print with paper **A4**, margins **None**, scale **100%** and **Background graphics** on, ideally on 200–300 gsm card. Cut at the grey ticks (99 mm and 198 mm from the top).
+
 ## Using the app (easiest)
 
 1. Install **Node.js** (the LTS version) from nodejs.org. You only need to do this once.
