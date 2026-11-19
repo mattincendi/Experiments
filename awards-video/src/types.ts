@@ -39,6 +39,10 @@ export type MinorAward = {
 	interval?: number;
 	/** Index into nominees of the winner, for the winner version. */
 	winner?: number;
+	/** Also reveal the winner at the end of the nominees video. */
+	includeWinner?: boolean;
+	/** Seconds of pause after the last nominee before the winner is highlighted. */
+	winnerDelay?: number;
 };
 export type RecapItem = {category: string; name: string; detail?: string};
 

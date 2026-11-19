@@ -32,6 +32,9 @@ export const MINOR_LEAD_FRAMES = 66;
 export const MINOR_DEFAULT_INTERVAL = 3;
 export const MINOR_HOLD_SECONDS = 4;
 export const MINOR_WINNER_SECONDS = 10;
+/** Nominees video with the winner included: default pause before the reveal, and the hold after it. */
+export const MINOR_DEFAULT_WINNER_DELAY = 3;
+export const MINOR_WINNER_HOLD_SECONDS = 6;
 export const MINOR_MAX_NOMINEES = 10;
 /** A short tail on the background when a nominees video has no closing card. */
 export const END_TAIL_FRAMES = 30;

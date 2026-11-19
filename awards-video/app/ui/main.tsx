@@ -9,7 +9,7 @@ import {CategoryVideo} from '../../src/CategoryVideo';
 import {WinnerVideo} from '../../src/WinnerVideo';
 import {ScreenVideo} from '../../src/ScreenVideo';
 import {clipFrames, computeNomineeFrames, expandScreen, hasOutro, onStageScreen, screenFrames, screenLabel, screenLoops, totalFrames, upNextScreen, winnerTotalFrames} from '../../src/frames';
-import {FPS, HEIGHT, MINOR_DEFAULT_INTERVAL, MINOR_MAX_NOMINEES, WIDTH} from '../../src/theme';
+import {FPS, HEIGHT, MINOR_DEFAULT_INTERVAL, MINOR_DEFAULT_WINNER_DELAY, MINOR_MAX_NOMINEES, WIDTH} from '../../src/theme';
 import type {Category, EventInfo, MinorAward, MinorNominee, Nominee, Project, Screen} from '../../src/types';
 import {loadProject, openOutput, RenderJob, renderStatus, saveProject, startRender, uploadClip, VideoJob} from './api';
 
@@ -88,14 +88,14 @@ const screenJob = (s: Screen, id: string, p: Project): VideoJob => ({
 	composition: 'screen',
 	inputProps: {screen: expandScreen(s, p), event: p.event},
 });
-const minorJob = (m: MinorAward, event: EventInfo): VideoJob => ({file: `${m.id}.mp4`, title: `Minor award: ${m.title}`, composition: 'screen', inputProps: {screen: {type: 'minor', award: m}, event}});
+const minorJob = (m: MinorAward, event: EventInfo): VideoJob => ({file: `${m.id}.mp4`, title: `Minor award: ${m.title}${m.includeWinner && hasMinorWinner(m) ? ' (with winner)' : ''}`, composition: 'screen', inputProps: {screen: {type: 'minor', award: m}, event}});
 const minorWinnerJob = (m: MinorAward, event: EventInfo): VideoJob => ({
 	file: `${m.id}-winner.mp4`,
 	title: `Minor award: ${m.title}: winner`,
 	composition: 'screen',
 	inputProps: {screen: {type: 'minor', award: m, showWinner: true}, event},
 });
-const hasMinorWinner = (m: MinorAward) => m.winner !== undefined && m.winner < m.nominees.length;
+const hasMinorWinner = (m: MinorAward) => m.winner !== undefined && m.winner < Math.min(MINOR_MAX_NOMINEES, m.nominees.length);
 
 // ---------------------------------------------------------------- fields that commit when you leave them
 
@@ -857,6 +857,37 @@ const MinorView: React.FC<{
 						Seconds between nominees
 						<NumField min={0.5} step={0.5} value={award.interval} placeholder={String(MINOR_DEFAULT_INTERVAL)} onCommit={(v) => set((m) => ({...m, interval: v}))} />
 					</label>
+					<div className="screen-card" style={{cursor: 'default', marginBottom: 12}}>
+						<label className="check">
+							<input
+								type="checkbox"
+								checked={!!award.includeWinner}
+								disabled={!winnerSet}
+								onChange={(e) => {
+									set((m) => ({...m, includeWinner: e.target.checked || undefined}));
+									setShowWinner(false);
+								}}
+							/>
+							Also reveal the winner at the end of the nominees video {winnerSet ? '' : '(mark the winner with ★ first)'}
+						</label>
+						{award.includeWinner && winnerSet ? (
+							<>
+								<label style={{maxWidth: 260}}>
+									Pause before the winner (sec)
+									<NumField
+										min={0}
+										step={0.5}
+										value={award.winnerDelay}
+										placeholder={String(MINOR_DEFAULT_WINNER_DELAY)}
+										onCommit={(v) => set((m) => ({...m, winnerDelay: v}))}
+									/>
+								</label>
+								<div className="warn small">
+									Heads up: <code>{award.id}.mp4</code> now shows who won, so don’t play it early. The separate winner video is still made as well.
+								</div>
+							</>
+						) : null}
+					</div>
 					{award.nominees.map((n, k) => (
 						<div key={k} className={`minor-row ${award.winner === k ? 'is-winner' : ''}`}>
 							<PhotoDrop photo={n.photo} onPhoto={(f) => setN(k, {...n, photo: f})} />
@@ -888,7 +919,7 @@ const MinorView: React.FC<{
 					<div className="section-label">Preview</div>
 					<div className="tabs small-tabs">
 						<button className={!winnerView ? 'on' : ''} onClick={() => setShowWinner(false)}>
-							Nominees
+							Nominees{award.includeWinner && winnerSet ? ' + winner' : ''}
 						</button>
 						<button className={winnerView ? 'on' : ''} disabled={!winnerSet} onClick={() => setShowWinner(true)} title={winnerSet ? '' : 'Mark a winner with ★ first'}>
 							Winner {winnerSet ? '' : '(mark one with ★)'}
@@ -896,7 +927,7 @@ const MinorView: React.FC<{
 					</div>
 					<Preview target={target} />
 					<button className="primary wide" disabled={job?.running} onClick={() => render((p) => [minorJob((p.minorAwards ?? [])[index], p.event)])}>
-						Render nominees
+						Render nominees{award.includeWinner && winnerSet ? ' + winner' : ''}
 					</button>
 					<button className="wide" disabled={job?.running || !winnerSet} onClick={() => render((p) => [minorWinnerJob((p.minorAwards ?? [])[index], p.event)])}>
 						Render winner

@@ -1,6 +1,6 @@
 import {staticFile} from 'remotion';
 import {getVideoMetadata} from '@remotion/media-utils';
-import {END_TAIL_FRAMES, FPS, INTRO_SECONDS, MINOR_DEFAULT_INTERVAL, MINOR_HOLD_SECONDS, MINOR_LEAD_FRAMES, MINOR_MAX_NOMINEES, MINOR_WINNER_SECONDS, RECAP_MIN_SECONDS, UP_NEXT_SECONDS, LOOP_FRAMES, OUTRO_SECONDS, PLACEHOLDER_SECONDS, WINNER_END_SECONDS, WINNER_REVEAL_SECONDS} from './theme';
+import {END_TAIL_FRAMES, FPS, INTRO_SECONDS, MINOR_DEFAULT_INTERVAL, MINOR_DEFAULT_WINNER_DELAY, MINOR_WINNER_HOLD_SECONDS, MINOR_HOLD_SECONDS, MINOR_LEAD_FRAMES, MINOR_MAX_NOMINEES, MINOR_WINNER_SECONDS, RECAP_MIN_SECONDS, UP_NEXT_SECONDS, LOOP_FRAMES, OUTRO_SECONDS, PLACEHOLDER_SECONDS, WINNER_END_SECONDS, WINNER_REVEAL_SECONDS} from './theme';
 import type {Category, MinorAward, Nominee, Project, RecapItem, Screen} from './types';
 
 /** Length of one clip segment in frames, from the clip itself. */
@@ -28,10 +28,21 @@ export const totalFrames = (nomineeFrames: number[], outro = true) =>
 /** Frames between minor-award nominees appearing. */
 export const minorStep = (m: MinorAward) => Math.round(Math.max(0.3, m.interval ?? MINOR_DEFAULT_INTERVAL) * FPS);
 
+export const minorHasWinner = (m: MinorAward) => m.winner !== undefined && m.winner >= 0 && m.winner < Math.min(MINOR_MAX_NOMINEES, m.nominees.length);
+
+/** The nominees video also reveals the winner at the end. */
+export const minorCombined = (m: MinorAward) => !!m.includeWinner && minorHasWinner(m);
+
+/** Frame by which every nominee has appeared. */
+export const minorRevealEnd = (m: MinorAward) => MINOR_LEAD_FRAMES + Math.max(0, Math.min(MINOR_MAX_NOMINEES, m.nominees.length) - 1) * minorStep(m) + 30;
+
+/** Frame where the winner highlight starts in a combined video. */
+export const minorWinnerAt = (m: MinorAward) => minorRevealEnd(m) + Math.round(Math.max(0, m.winnerDelay ?? MINOR_DEFAULT_WINNER_DELAY) * FPS);
+
 export const minorFrames = (m: MinorAward, showWinner?: boolean) => {
 	if (showWinner) return MINOR_WINNER_SECONDS * FPS;
-	const n = Math.min(MINOR_MAX_NOMINEES, m.nominees.length);
-	return MINOR_LEAD_FRAMES + Math.max(0, n - 1) * minorStep(m) + 30 + MINOR_HOLD_SECONDS * FPS;
+	if (minorCombined(m)) return minorWinnerAt(m) + MINOR_WINNER_HOLD_SECONDS * FPS;
+	return minorRevealEnd(m) + MINOR_HOLD_SECONDS * FPS;
 };
 
 export const winnerTotalFrames = (clip: number) => (WINNER_REVEAL_SECONDS + WINNER_END_SECONDS) * FPS + clip;

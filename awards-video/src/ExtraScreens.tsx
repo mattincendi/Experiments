@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {GoldText} from './GoldText';
 import {FONT, GOLD, GOLD_DARK, GOLD_LIGHT, IVORY, LOOP_FRAMES, MINOR_LEAD_FRAMES, MINOR_MAX_NOMINEES} from './theme';
-import {minorStep} from './frames';
+import {minorCombined, minorHasWinner, minorStep, minorWinnerAt} from './frames';
 import type {MinorAward, RecapItem} from './types';
 
 const ease = Easing.bezier(0.22, 1, 0.36, 1);
@@ -147,7 +147,10 @@ const WinnerRays: React.FC<{o: number; size: number; rot: number}> = ({o, size, 
 export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = ({award, showWinner}) => {
 	const frame = useCurrentFrame();
 	const nominees = award.nominees.slice(0, MINOR_MAX_NOMINEES);
-	const winnerIdx = showWinner && award.winner !== undefined && award.winner < nominees.length ? award.winner : -1;
+	// Winner version: highlight straight away. Combined: highlight after the nominees and a pause.
+	const combined = !showWinner && minorCombined(award);
+	const winnerIdx = (showWinner || combined) && minorHasWinner(award) ? award.winner! : -1;
+	const hlStart = showWinner ? 45 : minorWinnerAt(award);
 	const withPhotos = nominees.some((n) => n.photo);
 	const lines = interpolate(frame, [8, 40], [0, 1], {...clamp, easing: ease});
 	const kick = interpolate(frame, [12, 40], [0, 1], {...clamp, easing: ease});
@@ -162,12 +165,15 @@ export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = 
 	const step = showWinner ? 3 : minorStep(award);
 	const first = showWinner ? 14 : MINOR_LEAD_FRAMES;
 	// Winner highlight
-	const hl = winnerIdx >= 0 ? interpolate(frame, [45, 80], [0, 1], {...clamp, easing: ease}) : 0;
-	const kicker = showWinner ? award.kicker ? award.kicker : 'The winner of' : award.kicker || 'The nominees for';
+	const hl = winnerIdx >= 0 ? interpolate(frame, [hlStart, hlStart + 35], [0, 1], {...clamp, easing: ease}) : 0;
+	// In a combined video the line above the title changes from "The nominees for" to "The winner of".
+	const swap = combined ? interpolate(frame, [hlStart - 12, hlStart + 12], [0, 1], clamp) : showWinner ? 1 : 0;
+	const kicker = swap >= 0.5 ? 'The winner of' : award.kicker || 'The nominees for';
+	const kickerFade = combined ? Math.abs(1 - 2 * swap) : 1;
 
 	return (
 		<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', flexDirection: 'column'}}>
-			<div style={caps(28, {opacity: kick * 0.9, marginBottom: 22})}>{kicker}</div>
+			<div style={caps(28, {opacity: kick * 0.9 * kickerFade, marginBottom: 22})}>{kicker}</div>
 			<GoldText size={titleSize} sweep={sweep} tracking={`${0.2 - 0.06 * titleIn}em`} style={{opacity: titleIn, transform: `translateY(${(1 - titleIn) * 16}px)`}}>
 				{award.title}
 			</GoldText>
@@ -225,7 +231,7 @@ export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = 
 										) : null}
 										<GoldText
 											size={nameSize}
-											sweep={isWinner ? interpolate(frame, [80, 140], [-20, 120], clamp) : -20}
+											sweep={isWinner ? interpolate(frame, [hlStart + 35, hlStart + 95], [-20, 120], clamp) : -20}
 											tracking="0.1em"
 											style={{whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.15, position: 'relative'}}
 										>

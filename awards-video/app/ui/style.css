@@ -244,3 +244,4 @@ button.star { color: var(--muted); }
 button.star.on { color: #1a1305; background: var(--gold); border-color: var(--gold); }
 .small-tabs { margin: 0 0 10px; }
 input:disabled { opacity: 0.45; }
+.warn { color: var(--gold-light); background: rgba(201, 162, 74, 0.1); border: 1px solid rgba(201, 162, 74, 0.4); border-radius: 6px; padding: 8px 10px; }
