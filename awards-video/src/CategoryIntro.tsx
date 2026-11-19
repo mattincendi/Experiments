@@ -51,16 +51,19 @@ export const CategoryIntro: React.FC<{title: string; kicker: string; fadeOut?: b
 	const out = fadeOut ? interpolate(frame, [durationInFrames - 20, durationInFrames], [1, 0], clamp) : 1;
 	const drift = interpolate(frame, [0, durationInFrames], [1, 1.04]);
 
-	const size = title.length > 22 ? 88 : title.length > 14 ? 104 : 124;
+	// Long titles wrap onto two lines; keep them inside the gold rules.
+	const long = title.length > 36;
+	const size = long ? 72 : title.length > 22 ? 88 : title.length > 14 ? 104 : 124;
+	const spread = long ? 40 : 0; // move the gold rules apart for two-line titles
 
 	return (
 		<AbsoluteFill style={{opacity: out}}>
 			<Backdrop />
 			<AbsoluteFill style={{transform: `scale(${drift})`}}>
-				<GoldLine progress={lines} y={395} />
-				<GoldLine progress={lines} y={685} />
-				<Diamond y={396} o={diamonds} />
-				<Diamond y={686} o={diamonds} />
+				<GoldLine progress={lines} y={395 - spread} />
+				<GoldLine progress={lines} y={685 + spread} />
+				<Diamond y={396 - spread} o={diamonds} />
+				<Diamond y={686 + spread} o={diamonds} />
 				<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', flexDirection: 'column'}}>
 					<div
 						style={{

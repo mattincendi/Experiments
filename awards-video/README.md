@@ -33,7 +33,7 @@ Pre-rendered awards-night videos in navy and gold, at 1920×1080. You make every
 
 The title, background and message screens are **48-second seamless loops**, so set the playback software to loop them. The background is a 3D field of gold sparkles that the camera drifts through, with depth of field. It's built so the last frame flows straight into the first.
 
-The font is **Jost**, a free geometric font close to Futura.
+The font is **Jost**, a free geometric font close to Futura. Long titles and names wrap onto balanced lines and get slightly smaller, so nothing runs off the screen.
 
 ## Using the app (easiest)
 

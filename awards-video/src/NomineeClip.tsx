@@ -136,7 +136,7 @@ export const NomineeClip: React.FC<{nominee: Nominee; label?: string}> = ({nomin
 					size={nominee.name.length > 24 ? 60 : 76}
 					sweep={sweep}
 					tracking="0.12em"
-					style={{opacity: nameIn, transform: `translateX(${(1 - nameIn) * -30}px)`}}
+					style={{opacity: nameIn, transform: `translateX(${(1 - nameIn) * -30}px)`, textAlign: 'left', maxWidth: 1500}}
 				>
 					{nominee.name}
 				</GoldText>

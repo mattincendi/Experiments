@@ -29,7 +29,7 @@ const ShortRule: React.FC<{width?: number}> = ({width = 420}) => (
 export const HeaderScreen: React.FC<{title: string; kicker?: string}> = ({title, kicker}) => {
 	const frame = useCurrentFrame();
 	const sweep = interpolate(frame % LOOP_FRAMES, [300, 420], [-20, 120], clamp);
-	const size = title.length > 30 ? 64 : title.length > 18 ? 78 : 92;
+	const size = title.length > 40 ? 58 : title.length > 30 ? 64 : title.length > 18 ? 78 : 92;
 	return (
 		<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', flexDirection: 'column'}}>
 			{kicker ? <div style={caps(30, {marginBottom: 30, opacity: 0.85})}>{kicker}</div> : null}
@@ -160,8 +160,11 @@ export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = 
 	const perRow = Math.ceil(nominees.length / rows);
 	const wide = perRow >= 5;
 	const photo = withPhotos ? (rows === 2 ? (wide ? 140 : 165) : wide ? 190 : 230) : 0;
-	const nameSize = withPhotos ? (wide ? 30 : rows === 2 ? 34 : 40) : wide ? 40 : rows === 2 ? 54 : 62;
-	const titleSize = award.title.length > 24 ? 72 : 88;
+	const nameSize = withPhotos ? (wide ? 30 : rows === 2 ? 34 : 40) : perRow >= 5 ? 38 : perRow === 4 ? 44 : rows === 2 ? 54 : 62;
+	// Every row must fit the screen: cap each nominee's width and let long names wrap.
+	const gapX = withPhotos ? (wide ? 46 : 70) : wide ? 56 : perRow === 4 ? 70 : 100;
+	const cellMax = Math.floor((1840 - gapX * (perRow - 1)) / Math.max(1, perRow));
+	const titleSize = award.title.length > 36 ? 62 : award.title.length > 24 ? 72 : 88;
 	const step = showWinner ? 3 : minorStep(award);
 	const first = showWinner ? 14 : MINOR_LEAD_FRAMES;
 	// Winner highlight
@@ -185,7 +188,7 @@ export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = 
 				{[nominees.slice(0, perRow), nominees.slice(perRow)]
 					.filter((r) => r.length)
 					.map((row, r) => (
-						<div key={r} style={{display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: withPhotos ? (wide ? 46 : 70) : wide ? 56 : 100}}>
+						<div key={r} style={{display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: gapX}}>
 							{row.map((n, k) => {
 								const i = r * perRow + k;
 								const at = first + i * step;
@@ -203,7 +206,7 @@ export const MinorScreen: React.FC<{award: MinorAward; showWinner?: boolean}> = 
 											alignItems: 'center',
 											opacity: o * dim,
 											transform: `translateY(${(1 - o) * 20}px) scale(${scale})`,
-											maxWidth: withPhotos ? photo + 200 : wide ? 360 : 560,
+											maxWidth: Math.min(cellMax, withPhotos ? photo + 200 : 560),
 											zIndex: isWinner ? 2 : 1,
 										}}
 									>

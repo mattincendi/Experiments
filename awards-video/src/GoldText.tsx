@@ -1,7 +1,10 @@
 import React from 'react';
 import {FONT, goldGradient} from './theme';
 
-/** Metallic gold text with a light sweep; sweep runs from -20 (off left) to 120 (off right). */
+/**
+ * Metallic gold text with a light sweep; sweep runs from -20 (off left) to 120 (off right).
+ * Long text wraps onto balanced lines instead of running off screen.
+ */
 export const GoldText: React.FC<{
 	children: React.ReactNode;
 	size: number;
@@ -23,7 +26,11 @@ export const GoldText: React.FC<{
 			backgroundClip: 'text',
 			color: 'transparent',
 			filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.55))',
-			whiteSpace: 'nowrap',
+			whiteSpace: 'normal',
+			textWrap: 'balance',
+			textAlign: 'center',
+			lineHeight: 1.12,
+			maxWidth: 1680,
 			...style,
 		}}
 	>

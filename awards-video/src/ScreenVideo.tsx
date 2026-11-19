@@ -37,7 +37,7 @@ const Headline: React.FC<{title: string; above?: string; below?: string}> = ({ti
 	const local = frame % SWEEP_EVERY;
 	const sweep = interpolate(local, [60, 150], [-20, 120], clamp);
 	const glow = 0.5 + 0.5 * Math.sin((Math.PI * 2 * frame) / SWEEP_EVERY);
-	const size = title.length > 26 ? 92 : title.length > 16 ? 112 : 140;
+	const size = title.length > 36 ? 80 : title.length > 26 ? 92 : title.length > 16 ? 112 : 140;
 	return (
 		<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 0}}>
 			{above ? <Small style={{marginBottom: 36}}>{above}</Small> : null}

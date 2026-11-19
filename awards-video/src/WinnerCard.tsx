@@ -83,7 +83,7 @@ export const WinnerCard: React.FC<{category: string; name: string; detail?: stri
 	const rays = reveal ? interpolate(frame, [nameAt - 4, nameAt + 14, nameAt + 120], [0, 1, 0.35], clamp) : 0.25 * nameIn;
 	const flash = reveal ? interpolate(frame, [nameAt - 2, nameAt + 4, nameAt + 30], [0, 0.5, 0], clamp) : 0;
 	const out = fadeOut ? interpolate(frame, [durationInFrames - 15, durationInFrames], [1, 0], clamp) : 1;
-	const size = name.length > 22 ? 104 : name.length > 14 ? 124 : 146;
+	const size = name.length > 36 ? 88 : name.length > 22 ? 104 : name.length > 14 ? 124 : 146;
 
 	return (
 		<AbsoluteFill style={{opacity: out}}>
