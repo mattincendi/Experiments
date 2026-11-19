@@ -192,6 +192,29 @@ body {
 
 .empty-slot { position: absolute; inset: var(--edge); border: 0.3mm dashed #d6d6d6; display: flex; align-items: center; justify-content: center; color: #b4b4b4; font-size: 9pt; letter-spacing: 0.2em; text-transform: uppercase; }
 
+/* ------------------------------------------------------------ art deco design */
+.deco-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.d-box { position: absolute; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.d-vert { writing-mode: vertical-rl; display: flex; flex-direction: column; align-items: center; gap: 1mm; max-height: 100%; }
+.d-vert.up { transform: rotate(180deg); }
+.d-vert .label { margin: 0; }
+.d-vert b { font-weight: 500; font-size: 8.4pt; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-light); line-height: 1.2; }
+.d-vert small { font-size: 6.3pt; font-weight: 300; letter-spacing: 0.12em; opacity: 0.85; line-height: 1.2; }
+.ivory .d-vert b { color: var(--navy); }
+.fan { display: block; width: 44mm; height: auto; margin: 1.4mm 0; }
+.fan.flip { transform: scaleY(-1); }
+.d-center { padding: 0 3.5mm; }
+.d-center .kicker { font-size: 7.4pt; }
+.d-center .subtitle { font-size: 9pt; margin-top: 0.4mm; }
+.d-time { font-size: 8pt; letter-spacing: 0.08em; margin-top: 0.2mm; }
+.d-center .dress, .d-center .guest-main { margin-top: 1.6mm; }
+.d-stub .kicker { font-size: 7pt; letter-spacing: 0.36em; margin-right: -0.36em; }
+.d-stub .num { margin: 1.6mm 0 0.6mm; }
+.d-stub .fan { width: 30mm; margin: 2mm 0 2.6mm; }
+.d-stub .fields { width: 100%; padding: 0 1mm; }
+.d-stub .guest { font-size: 7.2pt; letter-spacing: 0.06em; margin-top: 2.6mm; line-height: 1.3; overflow-wrap: anywhere; }
+.d-stub .small-title { font-size: 6.2pt; letter-spacing: 0.3em; text-transform: uppercase; opacity: 0.8; line-height: 1.4; text-wrap: balance; }
+
 /* ------------------------------------------------------------ print */
 @media print {
 	body { background: none; }
@@ -249,8 +272,12 @@ body {
 		<label class="check"><input id="fields" type="checkbox"> Table and seat boxes on the stub</label>
 
 		<h2>Look</h2>
+		<div class="seg" id="design">
+			<button data-v="deco">Art deco<small>frames and pattern</small></button>
+			<button data-v="sparkle">Sparkles<small>like the videos</small></button>
+		</div>
 		<div class="seg" id="theme">
-			<button data-v="navy">Navy &amp; gold<small>like the videos</small></button>
+			<button data-v="navy">Navy &amp; gold<small>lots of ink</small></button>
 			<button data-v="ivory">Ivory &amp; gold<small>uses far less ink</small></button>
 		</div>
 		<div class="seg" id="edge">
@@ -262,7 +289,8 @@ body {
 		<div class="summary" id="summary"></div>
 		<ol class="howto">
 			<li>In the print dialog choose <b>A4</b>, margins <b>None</b>, scale <b>100%</b> (not "Fit"), and turn on <b>Background graphics</b>.</li>
-			<li>Use thick paper or card (200–300 gsm) if your printer takes it.</li>
+			<li>Use thick white card (200–300 gsm) if your printer takes it. Not blue card: printer ink is see-through, so gold and white won't show on it.</li>
+			<li>Navy covers almost the whole sheet in ink. For more than a few sheets, a print shop is usually cheaper, or choose Ivory.</li>
 			<li>Cut at the small grey ticks, 99 mm and 198 mm from the top. A guillotine or craft knife and ruler gives the cleanest edge.</li>
 			<li>Optional: score the dashed line before the stub so it tears off neatly.</li>
 		</ol>
@@ -293,6 +321,7 @@ body {
 		fields: true,
 		theme: 'navy',
 		edge: 'frame',
+		design: 'deco',
 	};
 	const KEY = 'awards-tickets-v1';
 	const TEXT = ['kicker', 'title', 'subtitle', 'date', 'date2', 'time', 'time2', 'venue', 'venue2', 'dress', 'stub', 'guests'];
@@ -351,6 +380,129 @@ body {
 		return `<svg class="sparkles" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>${defs}</defs>${body}</svg>`;
 	};
 
+	// ---- Art deco design: tumbling-block lattice, chamfered double frames, fan ornaments.
+	const PAL = {
+		navy: {bg: '#0b1a33', plate: '#081530', line: '#c9a24a', light: '#f3dc95', lattice: 'rgba(201,162,74,0.62)', label: '#f4efe3', bars: '#0b1a33'},
+		ivory: {bg: '#f3ecdc', plate: '#fffdf8', line: '#8a6a26', light: '#8a6a26', lattice: 'rgba(138,106,38,0.4)', label: '#ffffff', bars: '#0b1a33'},
+	};
+	const f = (v) => +v.toFixed(3);
+	const chamfer = (x, y, w, h, c) => [[x + c, y], [x + w - c, y], [x + w, y + c], [x + w, y + h - c], [x + w - c, y + h], [x + c, y + h], [x, y + h - c], [x, y + c]].map(([a, b]) => `${f(a)},${f(b)}`).join(' ');
+	const diamond = (x, y, r, fill) => `<path d="M${f(x - r)} ${f(y)}L${f(x)} ${f(y - r)}L${f(x + r)} ${f(y)}L${f(x)} ${f(y + r)}Z" fill="${fill}"/>`;
+	const lattice = (id, sd, color, lw) => {
+		const w = Math.sqrt(3) * sd;
+		const cube = (cx, cy) => {
+			const v = [[0, -sd], [w / 2, -sd / 2], [w / 2, sd / 2], [0, sd], [-w / 2, sd / 2], [-w / 2, -sd / 2]].map(([x, y]) => `${f(cx + x)} ${f(cy + y)}`);
+			const c = `${f(cx)} ${f(cy)}`;
+			return `M${v.join('L')}Z M${c}L${v[3]} M${c}L${v[1]} M${c}L${v[5]}`;
+		};
+		const d = [[0, 0], [w, 0], [w / 2, 1.5 * sd], [0, 3 * sd], [w, 3 * sd]].map(([x, y]) => cube(x, y)).join(' ');
+		return `<pattern id="${id}" width="${f(w)}" height="${f(3 * sd)}" patternUnits="userSpaceOnUse"><path d="${d}" fill="none" stroke="${color}" stroke-width="${lw}" stroke-linejoin="round"/></pattern>`;
+	};
+	const fan = (pal, flip = false) => {
+		let rays = '';
+		for (let a = 0; a <= 180; a += 15) {
+			const r = (a * Math.PI) / 180;
+			rays += `M${f(Math.cos(r) * 1.7)} ${f(-Math.sin(r) * 1.7)}L${f(Math.cos(r) * 4.5)} ${f(-Math.sin(r) * 4.5)}`;
+		}
+		return `<svg class="fan${flip ? ' flip' : ''}" viewBox="-31 -6.2 62 7.4" aria-hidden="true">
+			<path d="${rays}" stroke="${pal.light}" stroke-width="0.22" fill="none"/>
+			<path d="M-5.3 0A5.3 5.3 0 0 1 5.3 0" stroke="${pal.line}" stroke-width="0.26" fill="none"/>
+			<path d="M-6.6 0H-28.3M6.6 0H28.3" stroke="${pal.line}" stroke-width="0.26"/>
+			<path d="M-8.2 -1.3H-21M8.2 -1.3H21" stroke="${pal.line}" stroke-width="0.16"/>
+			<circle r="0.95" fill="${pal.light}"/>
+			${diamond(-29.3, 0, 0.95, pal.light)}${diamond(29.3, 0, 0.95, pal.light)}
+		</svg>`;
+	};
+	// Code 39, which any barcode scanner reads: 9 elements per character (bar, space, ...), 3 of them wide.
+	const C39 = {0: 'nnnwwnwnn', 1: 'wnnwnnnnw', 2: 'nnwwnnnnw', 3: 'wnwwnnnnn', 4: 'nnnwwnnnw', 5: 'wnnwwnnnn', 6: 'nnwwwnnnn', 7: 'nnnwnnwnw', 8: 'wnnwnnwnn', 9: 'nnwwnnwnn', '*': 'nwnnwnwnn'};
+	const barcode = (text, x, y, w, h, color) => {
+		const chars = [...`*${text}*`].filter((ch) => C39[ch]);
+		const WIDE = 2.5;
+		const n = w / (chars.length * (6 + 3 * WIDE) + chars.length - 1);
+		let cx = x, out = '';
+		chars.forEach((ch) => {
+			[...C39[ch]].forEach((e, k) => {
+				const ww = (e === 'w' ? WIDE : 1) * n;
+				if (k % 2 === 0) out += `<rect x="${f(cx)}" y="${f(y)}" width="${f(ww)}" height="${f(h)}" fill="${color}"/>`;
+				cx += ww;
+			});
+			cx += n;
+		});
+		return out;
+	};
+
+	const decoTicket = (n, digits, guest) => {
+		const s = state;
+		const pal = PAL[s.theme === 'ivory' ? 'ivory' : 'navy'];
+		const no = String(n).padStart(digits, '0');
+		const E = s.edge === 'bleed' ? 0 : 5;
+		const W = 210 - 2 * E, H = 99 - 2 * E, S = 54, M = W - S;
+		// the plate: chamfered double frame, with the lattice showing round it
+		const px = 8, py = 8, pw = M - px - 3.5, ph = H - 2 * py, c = 6, d1 = 1.4, B = 14;
+		const bx1 = px + d1 + B, bx2 = px + pw - d1 - B;
+		const yTop = py + d1, yBot = py + ph - d1;
+		const plW = 19, plH = 4.6, plX = px + pw / 2 - plW / 2, plY = py + ph - plH / 2;
+		// stub frame and barcode label
+		const sx = M + 4, sw = S - 8, d2 = 1.2, lw = 36, lh = 13, lx = M + (S - lw) / 2, ly = H - 9.5 - lh;
+		const font = `font-family="Jost, 'Futura PT', Futura, sans-serif"`;
+
+		const art = `<svg class="deco-art" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+			<defs>${lattice(`lat${n}`, 3.6, pal.lattice, 0.2)}</defs>
+			<rect width="${W}" height="${H}" fill="${pal.bg}"/>
+			<rect width="${M}" height="${H}" fill="url(#lat${n})"/>
+			<polygon points="${chamfer(px, py, pw, ph, c)}" fill="${pal.plate}" stroke="${pal.line}" stroke-width="0.4"/>
+			<polygon points="${chamfer(px + d1, py + d1, pw - 2 * d1, ph - 2 * d1, c - 0.6)}" fill="none" stroke="${pal.line}" stroke-width="0.18"/>
+			<path d="M${f(bx1)} ${f(yTop)}V${f(yBot)}M${f(bx1 + 0.9)} ${f(yTop)}V${f(yBot)}M${f(bx2)} ${f(yTop)}V${f(yBot)}M${f(bx2 - 0.9)} ${f(yTop)}V${f(yBot)}" stroke="${pal.line}" stroke-width="0.18"/>
+			${diamond(px + c / 2, py + c / 2, 0.9, pal.light)}${diamond(px + pw - c / 2, py + c / 2, 0.9, pal.light)}
+			${diamond(px + c / 2, py + ph - c / 2, 0.9, pal.light)}${diamond(px + pw - c / 2, py + ph - c / 2, 0.9, pal.light)}
+			<circle cx="${f(px + pw / 2)}" cy="${py}" r="2.6" fill="${pal.plate}" stroke="${pal.line}" stroke-width="0.35"/>
+			${diamond(px + pw / 2, py, 1.3, pal.light)}
+			<rect x="${f(plX)}" y="${f(plY)}" width="${plW}" height="${plH}" fill="${pal.plate}" stroke="${pal.line}" stroke-width="0.3"/>
+			<text x="${f(px + pw / 2)}" y="${f(plY + plH / 2 + 0.8)}" text-anchor="middle" ${font} font-size="2.3" letter-spacing="0.5" fill="${pal.line}">Nº ${no}</text>
+			<polygon points="${chamfer(sx, 4, sw, H - 8, 4)}" fill="none" stroke="${pal.line}" stroke-width="0.35"/>
+			<polygon points="${chamfer(sx + d2, 4 + d2, sw - 2 * d2, H - 8 - 2 * d2, 3.5)}" fill="none" stroke="${pal.line}" stroke-width="0.18"/>
+			${diamond(sx + 2, 6, 0.75, pal.light)}${diamond(sx + sw - 2, 6, 0.75, pal.light)}${diamond(sx + 2, H - 6, 0.75, pal.light)}${diamond(sx + sw - 2, H - 6, 0.75, pal.light)}
+			<line x1="${M}" y1="0" x2="${M}" y2="${H}" stroke="${pal.line}" stroke-width="0.3" stroke-dasharray="1 1"/>
+			<circle cx="${M}" cy="0" r="3" fill="#fff"/><circle cx="${M}" cy="${H}" r="3" fill="#fff"/>
+			<rect x="${f(lx)}" y="${f(ly)}" width="${lw}" height="${lh}" fill="${pal.label}" stroke="${pal.line}" stroke-width="0.25"/>
+			${barcode(no, lx + 4, ly + 1.6, lw - 8, lh - 5, pal.bars)}
+			<text x="${f(lx + lw / 2)}" y="${f(ly + lh - 1.1)}" text-anchor="middle" ${font} font-size="2.3" letter-spacing="1" fill="${pal.bars}">${no}</text>
+		</svg>`;
+
+		const box = (x, y, w, h, cls, inner) => `<div class="d-box ${cls}" style="left:${f(x)}mm;top:${f(y)}mm;width:${f(w)}mm;height:${f(h)}mm">${inner}</div>`;
+		const vert = (label, a, b, up) => (a || b) ? `<div class="d-vert${up ? ' up' : ''}"><span class="label">${label}</span>${a ? `<b>${esc(a)}</b>` : ''}${b ? `<small>${esc(b)}</small>` : ''}</div>` : '';
+		const time = [s.time, s.time2].filter(Boolean).map(esc).join(' &nbsp;·&nbsp; ');
+		const cw = bx2 - bx1 - 1.8;
+		const showFields = s.fields || (guest && (guest.table || guest.seat));
+
+		const center = `
+			${s.kicker ? `<div class="kicker">${esc(s.kicker)}</div>` : ''}
+			${fan(pal)}
+			<div class="title">${goldText(s.title, {size: 45.3, size2: 34, track: 0.12, maxW: (cw - 7) * PX, bevel: true})}</div>
+			${s.subtitle ? `<div class="subtitle">${esc(s.subtitle)}</div>` : ''}
+			${fan(pal, true)}
+			${time ? `<div class="d-time">${time}</div>` : ''}
+			${guest && guest.name ? `<div class="guest-main">Reserved for <b>${esc(guest.name)}</b></div>` : s.dress ? `<div class="dress">${esc(s.dress)}</div>` : ''}`;
+		const stub = `
+			${s.stub ? `<div class="kicker">${esc(s.stub)}</div>` : ''}
+			<div class="num">${goldText(no, {size: 34.7, track: 0.06, maxW: 150, bevel: true})}</div>
+			<div class="num-label">Ticket</div>
+			${fan(pal)}
+			${showFields ? `<div class="fields">
+				<div class="field"><div class="label">Table</div><div class="line">${esc(guest?.table || '')}</div></div>
+				<div class="field"><div class="label">Seat</div><div class="line">${esc(guest?.seat || '')}</div></div>
+			</div>` : `<div class="small-title">${esc(s.title)}${s.subtitle ? ` · ${esc(s.subtitle)}` : ''}</div>`}
+			${guest && guest.name ? `<div class="guest">${esc(guest.name)}</div>` : ''}`;
+
+		return `<div class="ticket">
+			${art}
+			${box(px + d1, yTop, B, yBot - yTop, 'd-band', vert('Date', s.date, s.date2, true))}
+			${box(bx2, yTop, B, yBot - yTop, 'd-band', vert('Venue', s.venue, s.venue2, false))}
+			${box(bx1 + 0.9, yTop + 1, cw, yBot - yTop - 3, 'd-center', center)}
+			${box(sx + d2 + 1.5, 4 + d2 + 2, sw - 2 * d2 - 3, ly - 4 - d2 - 3, 'd-stub', stub)}
+		</div>`;
+	};
+
 	const parseGuests = (text) =>
 		text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
 			const parts = (l.includes('\t') ? l.split('\t') : l.split(',')).map((p) => p.trim());
@@ -404,10 +556,10 @@ body {
 		ivory: [[0, '#6e5219'], [0.25, '#8a6a26'], [0.45, '#b08a37'], [0.5, '#c9a24a'], [0.55, '#b08a37'], [0.75, '#8a6a26'], [1, '#6e5219']],
 	};
 	let goldCache = new Map();
-	const goldText = (raw, {size, size2 = size, track, maxW, weight = 500}) => {
+	const goldText = (raw, {size, size2 = size, track, maxW, weight = 500, bevel = false}) => {
 		const text = String(raw).toUpperCase().trim() || ' ';
 		const theme = state.theme === 'ivory' ? 'ivory' : 'navy';
-		const key = [text, size, track, maxW, theme].join('|');
+		const key = [text, size, track, maxW, theme, bevel].join('|');
 		if (goldCache.has(key)) return goldCache.get(key);
 
 		const ctx = document.createElement('canvas').getContext('2d');
@@ -432,7 +584,7 @@ body {
 			return {lines, sz, ms, w: Math.max(...ms.map((m) => m.w)), asc: Math.max(...ms.map((m) => m.asc)), desc: Math.max(...ms.map((m) => m.desc))};
 		};
 		let L = layout([text], size);
-		if (L.w > maxW * 1.15 && text.includes(' ')) {
+		if (L.w > maxW * 1.45 && text.includes(' ')) {
 			const words = text.split(/\s+/);
 			let best = 1, bestDiff = Infinity;
 			for (let k = 1; k < words.length; k++) {
@@ -441,7 +593,7 @@ body {
 			}
 			L = layout([words.slice(0, best).join(' '), words.slice(best).join(' ')], size2);
 		}
-		const pad = Math.ceil(L.sz * 0.06);
+		const pad = Math.ceil(L.sz * (bevel ? 0.09 : 0.06));
 		const pitch = L.sz * 1.12;
 		const W = Math.ceil(L.w + pad * 2);
 		const H = Math.ceil(L.asc + L.desc + pitch * (L.lines.length - 1) + pad * 2);
@@ -452,16 +604,25 @@ body {
 		c.scale(DPI_SCALE, DPI_SCALE);
 		const grad = c.createLinearGradient(0, 0, W, H * 0.35 + W * 0.05);
 		for (const [o, col] of GOLD_STOPS[theme]) grad.addColorStop(o, col);
-		c.fillStyle = grad;
 		c.textBaseline = 'alphabetic';
 		setFont(c, L.sz);
-		L.lines.forEach((line, i) => {
+		const draw = (dx, dy) => L.lines.forEach((line, i) => {
 			const m = L.ms[i];
-			let x = pad + (L.w - m.w) / 2 + m.left;
-			const y = pad + L.asc + i * pitch;
+			let x = pad + (L.w - m.w) / 2 + m.left + dx;
+			const y = pad + L.asc + i * pitch + dy;
 			if (hasLS) c.fillText(line, x, y);
 			else for (const ch of line) { c.fillText(ch, x, y); x += c.measureText(ch).width + track * L.sz; }
 		});
+		if (bevel) {
+			// a shallow extruded edge under the face, like engraved metal
+			const depth = L.sz * 0.055;
+			c.fillStyle = theme === 'ivory' ? '#4a3511' : '#3b2a0b';
+			for (let k = 1; k <= 8; k++) draw((depth * k) / 8 * 0.35, (depth * k) / 8);
+			c.fillStyle = theme === 'ivory' ? '#6e5219' : '#8a6a26';
+			draw(depth * 0.12, depth * 0.3);
+		}
+		c.fillStyle = grad;
+		draw(0, 0);
 		const out = `<img class="goldimg" src="${canvas.toDataURL('image/png')}" width="${W}" height="${H}" alt="${esc(text)}">`;
 		goldCache.set(key, out);
 		return out;
@@ -474,14 +635,14 @@ body {
 		const digits = Math.max(3, String(start + count - 1).length);
 		const pages = Math.ceil(count / 3);
 		const root = $('sheets');
-		root.className = `sheets ${state.theme === 'ivory' ? 'ivory' : ''} ${state.edge === 'bleed' ? 'bleed' : ''}`;
+		root.className = `sheets ${state.theme === 'ivory' ? 'ivory' : ''} ${state.edge === 'bleed' ? 'bleed' : ''} ${state.design === 'sparkle' ? 'sparkle' : 'deco'}`;
 		document.documentElement.style.setProperty('--edge', state.edge === 'bleed' ? '0mm' : '5mm');
 		let html = '';
 		for (let p = 0; p < pages; p++) {
 			html += '<div class="page">';
 			for (let k = 0; k < 3; k++) {
 				const i = p * 3 + k;
-				html += `<div class="slot">${i < count ? ticketHtml(start + i, digits, guests[i]) : '<div class="empty-slot">Empty</div>'}</div>`;
+				html += `<div class="slot">${i < count ? (state.design === 'sparkle' ? ticketHtml : decoTicket)(start + i, digits, guests[i]) : '<div class="empty-slot">Empty</div>'}</div>`;
 			}
 			html += '<div class="cut c1"></div><div class="cut c2"></div></div>';
 		}
@@ -516,6 +677,7 @@ body {
 		btns.forEach((b) => b.addEventListener('click', () => { state[id] = b.dataset.v; save(); sync(); render(); }));
 		sync();
 	};
+	seg('design');
 	seg('theme');
 	seg('edge');
 	$('print').addEventListener('click', () => window.print());

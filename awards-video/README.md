@@ -40,7 +40,9 @@ The font is **Jost**, a free geometric font close to Futura. Long titles and nam
 `tickets/index.html` makes matching paper tickets: three per A4 sheet, cut crosswise into 210 × 99 mm, each with a numbered tear-off stub. Open it from the app (**Print tickets** in the sidebar, which fills in your event name) or double-click the file.
 
 - Set the event name, date, time, venue and dress code, and how many tickets you need, or paste a guest list (name, table, seat, one guest per line, straight from a spreadsheet) to get one ticket per guest.
-- **Navy & gold** matches the videos. **Ivory & gold** uses far less ink.
+- **Art deco** (default): a gold tumbling-block pattern round a chamfered double frame, the date and venue running up the sides, fan ornaments, bevelled gold lettering, and a Code 39 barcode of the ticket number on the stub that scanners can read. **Sparkles** is a still of the video backdrop.
+- **Navy & gold** matches the videos but covers almost the whole sheet in ink. **Ivory & gold** uses far less.
+- Print on **white** card. Printer ink is see-through, so gold and white can't be printed on blue card. The navy comes from the ink. For more than a few sheets, a print shop is usually cheaper than home ink.
 - **White edge** leaves a 5 mm white border round every ticket, so home printers that can't print to the edge still give even tickets. **Full bleed** is for a print shop.
 - Print with paper **A4**, margins **None**, scale **100%** and **Background graphics** on, ideally on 200–300 gsm card. Cut at the grey ticks (99 mm and 198 mm from the top).
 
