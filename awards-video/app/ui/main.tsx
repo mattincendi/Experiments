@@ -1076,7 +1076,7 @@ const App: React.FC = () => {
 					<div className="muted small center">
 						{plural(cats.length, 'nominee video')}, {plural(winners, 'winner video')}, {plural(cats.length * 2 + project.screens.length, 'screen')}, {plural(minors.length, 'minor award')}
 					</div>
-					<a className="link center small" href="/tickets" target="_blank" rel="noreferrer">
+					<a className="link center small" href="/tickets/" target="_blank" rel="noreferrer">
 						Print tickets (A4, 3 per sheet)
 					</a>
 					<div className={`save ${saved}`}>{saved === 'saved' ? 'All changes saved' : saved === 'saving' ? 'Saving…' : 'Could not save. Is the app still running?'}</div>

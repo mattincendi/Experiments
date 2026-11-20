@@ -6,11 +6,12 @@
 <title>Awards Night Tickets</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /*
  * Tickets in the awards-video look (navy, metallic gold, Jost).
- * One A4 sheet = three tickets of 210 x 99 mm, cut crosswise.
+ * One A4 sheet = three tickets, cut crosswise: with trim marks for a cutting board
+ * (194 x 93.7 mm each), or exact thirds (210 x 99 mm).
  * Colours match src/theme.ts.
  */
 @page { size: A4 portrait; margin: 0; }
@@ -25,8 +26,13 @@
 	--ivory: #f4efe3;
 	--font: 'Jost', 'Futura PT', 'Futura', 'Century Gothic', sans-serif;
 
-	/* white edge round each ticket; 0 for full bleed */
+	/* white border round each ticket; 0 for full bleed */
 	--edge: 5mm;
+	/* line and text weight (set from the Look options) */
+	--k: 1;
+	--w-light: 300;
+	--w-reg: 400;
+	--w-med: 500;
 
 	/* app chrome (screen only) */
 	--ui-bg: #0e1422;
@@ -75,6 +81,7 @@ body {
 }
 .seg button[aria-pressed="true"] { border-color: var(--gold); color: var(--ui-text); background: #1d2742; }
 .seg button small { display: block; font-size: 11px; color: var(--ui-muted); }
+.seg.three { grid-template-columns: repeat(3, 1fr); }
 .check { display: flex !important; grid-template-columns: none; align-items: center; gap: 8px; color: var(--ui-text) !important; }
 .check input { width: auto; }
 .hint { font-size: 12px; color: var(--ui-muted); line-height: 1.45; margin: -4px 0 10px; }
@@ -101,19 +108,9 @@ body {
 	margin: 0 auto 12mm;
 	box-shadow: 0 6px 30px rgba(0, 0, 0, 0.5);
 }
-.slot { position: absolute; left: 0; width: 210mm; height: 99mm; }
-.slot:nth-child(1) { top: 0; }
-.slot:nth-child(2) { top: 99mm; }
-.slot:nth-child(3) { top: 198mm; }
-
-/* cut guides: short ticks in the white edge at both sides of each cut */
-.cut { position: absolute; left: 0; right: 0; height: 0; pointer-events: none; }
-.cut::before, .cut::after { content: ''; position: absolute; top: -0.1mm; width: calc(var(--edge) - 1.2mm); border-top: 0.2mm solid #9aa0aa; }
-.cut::before { left: 0; }
-.cut::after { right: 0; }
-.cut.c1 { top: 99mm; }
-.cut.c2 { top: 198mm; }
-.bleed .cut { display: none; }
+.slot { position: absolute; }
+/* trim marks / cut ticks, drawn over the whole sheet */
+.marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 
 .ticket {
 	position: absolute;
@@ -122,10 +119,10 @@ body {
 	grid-template-columns: minmax(0, 1fr) 54mm;
 	overflow: hidden;
 	color: var(--ivory);
+	font-weight: var(--w-reg);
 	background:
 		radial-gradient(ellipse 55% 75% at 36% 48%, var(--navy-light) 0%, var(--navy) 50%, var(--navy-deep) 100%);
 }
-.bleed .ticket { inset: 0; }
 .sparkles { position: absolute; inset: 0; width: 100%; height: 100%; }
 .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 85% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%); }
 
@@ -133,37 +130,37 @@ body {
 .main { padding: 7mm 9mm; }
 
 /* gold hairline frame with corner diamonds */
-.frame { position: absolute; inset: 3.4mm 2.4mm 3.4mm 3.4mm; border: 0.25mm solid rgba(201, 162, 74, 0.75); pointer-events: none; }
+.frame { position: absolute; inset: 3.4mm 2.4mm 3.4mm 3.4mm; border: calc(0.25mm * var(--k)) solid rgba(201, 162, 74, 0.8); pointer-events: none; }
 .frame i { position: absolute; width: 1.8mm; height: 1.8mm; background: var(--gold-light); transform: rotate(45deg); }
 .frame i:nth-child(1) { left: -0.95mm; top: -0.95mm; }
 .frame i:nth-child(2) { right: -0.95mm; top: -0.95mm; }
 .frame i:nth-child(3) { left: -0.95mm; bottom: -0.95mm; }
 .frame i:nth-child(4) { right: -0.95mm; bottom: -0.95mm; }
 
-.kicker { font-weight: 300; font-size: 8.5pt; letter-spacing: 0.42em; text-transform: uppercase; opacity: 0.9; margin-right: -0.42em; }
+.kicker { font-weight: var(--w-light); font-size: 8.5pt; letter-spacing: 0.42em; text-transform: uppercase; opacity: 0.9; margin-right: -0.42em; }
 
 /* Metallic gold lettering is drawn at 600 dpi on a canvas: gradient text in PDFs breaks in some viewers and printers. */
 .goldimg { display: block; max-width: 100%; height: auto; }
 .title { display: flex; justify-content: center; width: 100%; padding: 0.6mm 0; }
-.subtitle { font-weight: 300; font-size: 11pt; letter-spacing: 0.5em; margin-right: -0.5em; text-transform: uppercase; margin-top: 1.2mm; }
+.subtitle { font-weight: var(--w-light); font-size: 11pt; letter-spacing: 0.5em; margin-right: -0.5em; text-transform: uppercase; margin-top: 1.2mm; }
 
-.rule { position: relative; width: 78%; height: 0.3mm; margin: 3.4mm 0; background: linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold-light) 50%, var(--gold) 80%, transparent); }
+.rule { position: relative; width: 78%; height: calc(0.3mm * var(--k)); margin: 3.4mm 0; background: linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold-light) 50%, var(--gold) 80%, transparent); }
 .rule::after { content: ''; position: absolute; left: 50%; top: 50%; width: 1.7mm; height: 1.7mm; background: var(--gold-light); transform: translate(-50%, -50%) rotate(45deg); }
 
 .details { display: flex; justify-content: center; gap: 0; width: 100%; }
 .detail { flex: 1 1 0; min-width: 0; padding: 0 2.5mm; }
-.detail + .detail { border-left: 0.25mm solid rgba(201, 162, 74, 0.5); }
-.label { font-size: 6pt; font-weight: 500; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.9mm; }
-.value { font-size: 8.6pt; font-weight: 400; letter-spacing: 0.04em; line-height: 1.3; }
-.value small { display: block; font-size: 7pt; font-weight: 300; opacity: 0.8; }
-.dress { font-size: 6.6pt; font-weight: 400; letter-spacing: 0.34em; text-transform: uppercase; margin-top: 3mm; color: var(--gold-light); margin-right: -0.34em; }
+.detail + .detail { border-left: calc(0.25mm * var(--k)) solid rgba(201, 162, 74, 0.6); }
+.label { font-size: 6pt; font-weight: var(--w-med); letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.9mm; }
+.value { font-size: 8.6pt; font-weight: var(--w-reg); letter-spacing: 0.04em; line-height: 1.3; }
+.value small { display: block; font-size: 7pt; font-weight: var(--w-light); opacity: 0.8; }
+.dress { font-size: 6.6pt; font-weight: var(--w-reg); letter-spacing: 0.34em; text-transform: uppercase; margin-top: 3mm; color: var(--gold-light); margin-right: -0.34em; }
 .guest-main { font-size: 7.4pt; letter-spacing: 0.08em; margin-top: 2.6mm; opacity: 0.95; }
-.guest-main b { font-weight: 500; letter-spacing: 0.04em; }
+.guest-main b { font-weight: var(--w-med); letter-spacing: 0.04em; }
 .no-main { position: absolute; right: 6mm; bottom: 5.4mm; font-size: 6.2pt; letter-spacing: 0.22em; color: var(--gold); }
 
 /* tear-off stub */
 .stub { padding: 7mm 5mm 7mm 6mm; }
-.perf { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-left: 0.35mm dashed rgba(201, 162, 74, 0.8); }
+.perf { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-left: calc(0.35mm * var(--k)) dashed rgba(201, 162, 74, 0.8); }
 .notch { position: absolute; left: calc(-1 * 3mm); width: 6mm; height: 6mm; border-radius: 50%; background: #fff; z-index: 2; }
 .notch.t { top: -3mm; }
 .notch.b { bottom: -3mm; }
@@ -175,8 +172,8 @@ body {
 .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; width: 100%; }
 .field { text-align: left; }
 .field .label { margin-bottom: 0.6mm; letter-spacing: 0.26em; }
-.field .line { border-bottom: 0.25mm solid rgba(201, 162, 74, 0.7); height: 6.2mm; font-size: 11pt; font-weight: 500; line-height: 6mm; text-align: center; color: var(--gold-light); }
-.stub .guest { font-size: 7.4pt; font-weight: 400; letter-spacing: 0.06em; margin-top: 3mm; line-height: 1.3; max-width: 100%; overflow-wrap: anywhere; }
+.field .line { border-bottom: calc(0.25mm * var(--k)) solid rgba(201, 162, 74, 0.8); height: 6.2mm; font-size: 11pt; font-weight: var(--w-med); line-height: 6mm; text-align: center; color: var(--gold-light); }
+.stub .guest { font-size: 7.4pt; font-weight: var(--w-reg); letter-spacing: 0.06em; margin-top: 3mm; line-height: 1.3; max-width: 100%; overflow-wrap: anywhere; }
 
 /* ------------------------------------------------------------ ivory (ink-saving) */
 .ivory .ticket { color: var(--navy); background: radial-gradient(ellipse 70% 90% at 36% 48%, #fffdf7 0%, #faf6ec 55%, #f1eadb 100%); }
@@ -198,8 +195,8 @@ body {
 .d-vert { writing-mode: vertical-rl; display: flex; flex-direction: column; align-items: center; gap: 1mm; max-height: 100%; }
 .d-vert.up { transform: rotate(180deg); }
 .d-vert .label { margin: 0; }
-.d-vert b { font-weight: 500; font-size: 8.4pt; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-light); line-height: 1.2; }
-.d-vert small { font-size: 6.3pt; font-weight: 300; letter-spacing: 0.12em; opacity: 0.85; line-height: 1.2; }
+.d-vert b { font-weight: var(--w-med); font-size: 8.4pt; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-light); line-height: 1.2; }
+.d-vert small { font-size: 6.3pt; font-weight: var(--w-light); letter-spacing: 0.12em; opacity: 0.85; line-height: 1.2; }
 .ivory .d-vert b { color: var(--navy); }
 .fan { display: block; width: 44mm; height: auto; margin: 1.4mm 0; }
 .fan.flip { transform: scaleY(-1); }
@@ -214,6 +211,18 @@ body {
 .d-stub .fields { width: 100%; padding: 0 1mm; }
 .d-stub .guest { font-size: 7.2pt; letter-spacing: 0.06em; margin-top: 2.6mm; line-height: 1.3; overflow-wrap: anywhere; }
 .d-stub .small-title { font-size: 6.2pt; letter-spacing: 0.3em; text-transform: uppercase; opacity: 0.8; line-height: 1.4; text-wrap: balance; }
+
+/* ------------------------------------------------------------ QR code */
+.qr { display: flex; flex-direction: column; align-items: center; margin-top: 2.4mm; }
+.qr svg { display: block; width: 19mm; height: 19mm; }
+.qr-cap { font-size: 5.6pt; letter-spacing: 0.24em; margin-right: -0.24em; text-transform: uppercase; margin-top: 1mm; color: var(--gold); }
+.ivory .qr-cap { color: var(--gold-dark); }
+
+/* ------------------------------------------------------------ bolder lines and text */
+:is(.w-bold, .w-heavy) :is(.kicker, .subtitle, .value small, .small-title, .d-vert small, .guest-main) { opacity: 1; }
+.w-heavy .label { font-size: 6.6pt; }
+.w-heavy .value small, .w-heavy .d-vert small { font-size: 7.2pt; }
+.w-heavy .d-time, .w-heavy .guest-main { font-size: 8.6pt; }
 
 /* ------------------------------------------------------------ print */
 @media print {
@@ -237,7 +246,7 @@ body {
 <div class="layout">
 	<aside class="panel">
 		<h1>Tickets</h1>
-		<p class="lede">Three tickets per A4 sheet, cut crosswise into 210 × 99 mm. Each has a tear-off stub with its number.</p>
+		<p class="lede">Three tickets per A4 sheet, cut crosswise. Each has a tear-off stub with its number.</p>
 
 		<h2>Event</h2>
 		<label>Kicker <input id="kicker"></label>
@@ -265,11 +274,18 @@ body {
 			<label>How many <input id="count" type="number" min="1" max="600"></label>
 			<label>First number <input id="start" type="number" min="0"></label>
 		</div>
-		<label>Guest list (optional)
-			<textarea id="guests" placeholder="Jane Smith&#9;4&#9;2&#10;Sam Lee, 4, 3&#10;Alex Morgan"></textarea>
+		<label>Guest list: name, table, seat (optional)
+			<textarea id="guests" placeholder="Jane Smith, 4, 2&#10;Sam Lee, 4, 3&#10;Alex Morgan, 5"></textarea>
 		</label>
-		<p class="hint">One guest per line: name, then table and seat if you have them. Separate them with commas, or paste straight from a spreadsheet. With a list, you get one ticket per guest.</p>
-		<label class="check"><input id="fields" type="checkbox"> Table and seat boxes on the stub</label>
+		<p class="hint">One ticket per line: name, table, seat, separated by commas, or paste three columns straight from a spreadsheet. Leave the name out for a seat-only ticket (<b>, 4, 2</b>). The table and seat print on the ticket and the stub.</p>
+		<label>Seats per table (optional) <input id="perTable" type="number" min="0" placeholder="e.g. 10"></label>
+		<p class="hint">Numbers tickets without a table and seat automatically: with 10, tickets 1–10 are table 1, seats 1–10, then table 2, and so on.</p>
+		<label class="check"><input id="fields" type="checkbox"> Table and seat boxes on the stub, even when empty</label>
+
+		<h2>QR code</h2>
+		<label>Link <input id="qr" type="url" placeholder="https://…"></label>
+		<label>Caption <input id="qrcap"></label>
+		<p class="hint">The QR code on the stub opens this link. Saved in this browser only. Check that the link opens on a phone that isn't signed in to your work account. Leave it empty for a barcode of the ticket number instead.</p>
 
 		<h2>Look</h2>
 		<div class="seg" id="design">
@@ -280,10 +296,28 @@ body {
 			<button data-v="navy">Navy &amp; gold<small>lots of ink</small></button>
 			<button data-v="ivory">Ivory &amp; gold<small>uses far less ink</small></button>
 		</div>
-		<div class="seg" id="edge">
-			<button data-v="frame">White edge<small>any printer</small></button>
+		<div class="seg" id="weight" style="grid-template-columns: repeat(3, 1fr)">
+			<button data-v="fine">Fine<small>hairlines</small></button>
+			<button data-v="bold">Bold<small>easier to read</small></button>
+			<button data-v="heavy">Extra bold<small>for navy</small></button>
+		</div>
+
+		<h2>Cutting</h2>
+		<div class="seg three" id="edge">
+			<button data-v="trim">Trim marks<small>cutting board</small></button>
+			<button data-v="frame">Exact thirds<small>2 cuts</small></button>
 			<button data-v="bleed">Full bleed<small>print shop</small></button>
 		</div>
+		<label id="strip-wrap">White border round each ticket
+			<select id="strip">
+				<option value="0">None</option>
+				<option value="2">2 mm</option>
+				<option value="3">3 mm</option>
+				<option value="4">4 mm</option>
+				<option value="5">5 mm</option>
+			</select>
+		</label>
+		<p class="hint" id="cut-hint"></p>
 
 		<button class="print" id="print">Print / Save as PDF</button>
 		<div class="summary" id="summary"></div>
@@ -291,7 +325,7 @@ body {
 			<li>In the print dialog choose <b>A4</b>, margins <b>None</b>, scale <b>100%</b> (not "Fit"), and turn on <b>Background graphics</b>.</li>
 			<li>Use thick white card (200–300 gsm) if your printer takes it. Not blue card: printer ink is see-through, so gold and white won't show on it.</li>
 			<li>Navy covers almost the whole sheet in ink. For more than a few sheets, a print shop is usually cheaper, or choose Ivory.</li>
-			<li>Cut at the small grey ticks, 99 mm and 198 mm from the top. A guillotine or craft knife and ruler gives the cleanest edge.</li>
+			<li>Cut along the black trim marks at the edges of the sheet: line each mark up with the blade of your cutting board. Do the two long sides first, then the four cuts across.</li>
 			<li>Optional: score the dashed line before the stub so it tears off neatly.</li>
 		</ol>
 	</aside>
@@ -301,6 +335,7 @@ body {
 	</main>
 </div>
 
+<script src="vendor/qrcode.js"></script>
 <script>
 (() => {
 	const DEFAULTS = {
@@ -320,15 +355,38 @@ body {
 		guests: '',
 		fields: true,
 		theme: 'navy',
-		edge: 'frame',
+		edge: 'trim',
+		strip: 3,
 		design: 'deco',
+		weight: 'bold',
+		qr: '',
+		qrcap: 'Scan me',
+		perTable: '',
 	};
 	const KEY = 'awards-tickets-v1';
-	const TEXT = ['kicker', 'title', 'subtitle', 'date', 'date2', 'time', 'time2', 'venue', 'venue2', 'dress', 'stub', 'guests'];
+	const TEXT = ['kicker', 'title', 'subtitle', 'date', 'date2', 'time', 'time2', 'venue', 'venue2', 'dress', 'stub', 'guests', 'qr', 'qrcap'];
 
 	let saved = null;
 	try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch {}
 	const state = {...DEFAULTS, ...(saved || {})};
+	// Settings saved before trim marks existed: move them onto the new defaults.
+	if (saved && !saved.v2) { state.edge = 'trim'; state.weight = 'bold'; }
+	state.v2 = true;
+
+	// Sheet geometry, in mm. Trim marks: tickets sit inside an 8 mm margin, so the
+	// marks print even on printers that can't reach the paper edge.
+	const MARGIN = 8;
+	const geo = () => {
+		if (state.edge === 'trim') return {mode: 'trim', mx: MARGIN, my: MARGIN, tw: 210 - 2 * MARGIN, th: (297 - 2 * MARGIN) / 3, strip: Math.max(0, +state.strip || 0)};
+		if (state.edge === 'bleed') return {mode: 'bleed', mx: 0, my: 0, tw: 210, th: 99, strip: 0};
+		return {mode: 'frame', mx: 0, my: 0, tw: 210, th: 99, strip: 5};
+	};
+	const WEIGHTS = {
+		fine: {k: 1, light: 300, reg: 400, med: 500, gold: 500},
+		bold: {k: 1.7, light: 400, reg: 500, med: 600, gold: 600},
+		heavy: {k: 2.4, light: 500, reg: 600, med: 700, gold: 700},
+	};
+	const wt = () => WEIGHTS[state.weight] || WEIGHTS.bold;
 	const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
 	const $ = (id) => document.getElementById(id);
@@ -388,27 +446,38 @@ body {
 	const f = (v) => +v.toFixed(3);
 	const chamfer = (x, y, w, h, c) => [[x + c, y], [x + w - c, y], [x + w, y + c], [x + w, y + h - c], [x + w - c, y + h], [x + c, y + h], [x, y + h - c], [x, y + c]].map(([a, b]) => `${f(a)},${f(b)}`).join(' ');
 	const diamond = (x, y, r, fill) => `<path d="M${f(x - r)} ${f(y)}L${f(x)} ${f(y - r)}L${f(x + r)} ${f(y)}L${f(x)} ${f(y + r)}Z" fill="${fill}"/>`;
-	const lattice = (id, sd, color, lw) => {
+	// Tumbling-block lattice as plain vector lines (no SVG pattern, which some printers rasterise).
+	// Every edge is drawn once, so the lines stay even. Cached: it's the same on every ticket.
+	const latticeCache = new Map();
+	const lattice = (W, H, sd) => {
+		const key = [W, H, sd].join('|');
+		if (latticeCache.has(key)) return latticeCache.get(key);
 		const w = Math.sqrt(3) * sd;
-		const cube = (cx, cy) => {
-			const v = [[0, -sd], [w / 2, -sd / 2], [w / 2, sd / 2], [0, sd], [-w / 2, sd / 2], [-w / 2, -sd / 2]].map(([x, y]) => `${f(cx + x)} ${f(cy + y)}`);
-			const c = `${f(cx)} ${f(cy)}`;
-			return `M${v.join('L')}Z M${c}L${v[3]} M${c}L${v[1]} M${c}L${v[5]}`;
-		};
-		const d = [[0, 0], [w, 0], [w / 2, 1.5 * sd], [0, 3 * sd], [w, 3 * sd]].map(([x, y]) => cube(x, y)).join(' ');
-		return `<pattern id="${id}" width="${f(w)}" height="${f(3 * sd)}" patternUnits="userSpaceOnUse"><path d="${d}" fill="none" stroke="${color}" stroke-width="${lw}" stroke-linejoin="round"/></pattern>`;
+		const P = (x, y) => `${f(x)} ${f(y)}`;
+		let d = '';
+		for (let row = -1; row * 1.5 * sd < H + 2 * sd; row++) {
+			const cy = row * 1.5 * sd;
+			for (let cx = (row & 1 ? w / 2 : 0) - w; cx < W + w; cx += w) {
+				// per cube: its upper-left, top and upper-right edges, its left edge, and the three inner lines
+				d += `M${P(cx - w / 2, cy + sd / 2)}L${P(cx - w / 2, cy - sd / 2)}L${P(cx, cy - sd)}L${P(cx + w / 2, cy - sd / 2)}`;
+				d += `M${P(cx, cy)}L${P(cx, cy + sd)}M${P(cx, cy)}L${P(cx + w / 2, cy - sd / 2)}M${P(cx, cy)}L${P(cx - w / 2, cy - sd / 2)}`;
+			}
+		}
+		latticeCache.set(key, d);
+		return d;
 	};
 	const fan = (pal, flip = false) => {
+		const k = wt().k;
 		let rays = '';
 		for (let a = 0; a <= 180; a += 15) {
 			const r = (a * Math.PI) / 180;
 			rays += `M${f(Math.cos(r) * 1.7)} ${f(-Math.sin(r) * 1.7)}L${f(Math.cos(r) * 4.5)} ${f(-Math.sin(r) * 4.5)}`;
 		}
 		return `<svg class="fan${flip ? ' flip' : ''}" viewBox="-31 -6.2 62 7.4" aria-hidden="true">
-			<path d="${rays}" stroke="${pal.light}" stroke-width="0.22" fill="none"/>
-			<path d="M-5.3 0A5.3 5.3 0 0 1 5.3 0" stroke="${pal.line}" stroke-width="0.26" fill="none"/>
-			<path d="M-6.6 0H-28.3M6.6 0H28.3" stroke="${pal.line}" stroke-width="0.26"/>
-			<path d="M-8.2 -1.3H-21M8.2 -1.3H21" stroke="${pal.line}" stroke-width="0.16"/>
+			<path d="${rays}" stroke="${pal.light}" stroke-width="${f(0.22 * k)}" fill="none"/>
+			<path d="M-5.3 0A5.3 5.3 0 0 1 5.3 0" stroke="${pal.line}" stroke-width="${f(0.26 * k)}" fill="none"/>
+			<path d="M-6.6 0H-28.3M6.6 0H28.3" stroke="${pal.line}" stroke-width="${f(0.26 * k)}"/>
+			<path d="M-8.2 -1.3H-21M8.2 -1.3H21" stroke="${pal.line}" stroke-width="${f(0.16 * k)}"/>
 			<circle r="0.95" fill="${pal.light}"/>
 			${diamond(-29.3, 0, 0.95, pal.light)}${diamond(29.3, 0, 0.95, pal.light)}
 		</svg>`;
@@ -431,42 +500,101 @@ body {
 		return out;
 	};
 
+	// QR code (qrcode-generator, in vendor/), as one vector path: each run of dark modules is a rectangle.
+	const qrCache = new Map();
+	const qrMatrix = (text) => {
+		if (qrCache.has(text)) return qrCache.get(text);
+		let out = null;
+		try {
+			if (qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs['UTF-8']) qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+			const q = qrcode(0, 'M');
+			q.addData(text);
+			q.make();
+			const n = q.getModuleCount();
+			let d = '';
+			for (let r = 0; r < n; r++) {
+				for (let c = 0; c < n; ) {
+					if (!q.isDark(r, c)) { c++; continue; }
+					let e = c;
+					while (e < n && q.isDark(r, e)) e++;
+					d += `M${c} ${r}h${e - c}v1h${c - e}z`;
+					c = e;
+				}
+			}
+			out = {n, d};
+		} catch (e) {
+			console.error('QR code', e);
+		}
+		qrCache.set(text, out);
+		return out;
+	};
+	const qrLink = () => (state.qr || '').trim();
+	// QR with its 4-module quiet zone on a light square; (x, y, size) in the caller's units.
+	const qrGroup = (text, x, y, size, ink, paper) => {
+		const Q = qrMatrix(text);
+		if (!Q) return '';
+		const t = Q.n + 8;
+		return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(size / t)})" shape-rendering="crispEdges"><rect width="${t}" height="${t}" fill="${paper}"/><path transform="translate(4 4)" d="${Q.d}" fill="${ink}"/></g>`;
+	};
+	const qrSvg = (text, ink, paper) => {
+		const Q = qrMatrix(text);
+		return Q ? `<svg viewBox="0 0 ${Q.n + 8} ${Q.n + 8}" role="img" aria-label="QR code">${qrGroup(text, 0, 0, Q.n + 8, ink, paper)}</svg>` : '';
+	};
+
+	// "Reserved for Jane Smith · Table 4 · Seat 2", or whichever parts are known.
+	const seatLine = (guest) => {
+		if (!guest) return '';
+		const bits = [];
+		if (guest.name) bits.push(`Reserved for <b>${esc(guest.name)}</b>`);
+		if (guest.table) bits.push(`Table <b>${esc(guest.table)}</b>`);
+		if (guest.seat) bits.push(`Seat <b>${esc(guest.seat)}</b>`);
+		return bits.join(' &nbsp;·&nbsp; ');
+	};
+
 	const decoTicket = (n, digits, guest) => {
 		const s = state;
 		const pal = PAL[s.theme === 'ivory' ? 'ivory' : 'navy'];
 		const no = String(n).padStart(digits, '0');
-		const E = s.edge === 'bleed' ? 0 : 5;
-		const W = 210 - 2 * E, H = 99 - 2 * E, S = 54, M = W - S;
+		const G = geo(), k = wt().k;
+		const W = G.tw - 2 * G.strip, H = G.th - 2 * G.strip, S = 54, M = W - S;
 		// the plate: chamfered double frame, with the lattice showing round it
 		const px = 8, py = 8, pw = M - px - 3.5, ph = H - 2 * py, c = 6, d1 = 1.4, B = 14;
 		const bx1 = px + d1 + B, bx2 = px + pw - d1 - B;
 		const yTop = py + d1, yBot = py + ph - d1;
 		const plW = 19, plH = 4.6, plX = px + pw / 2 - plW / 2, plY = py + ph - plH / 2;
-		// stub frame and barcode label
-		const sx = M + 4, sw = S - 8, d2 = 1.2, lw = 36, lh = 13, lx = M + (S - lw) / 2, ly = H - 9.5 - lh;
+		// stub frame, and a QR code (or a barcode of the number) at its foot
+		const sx = M + 4, sw = S - 8, d2 = 1.2, lw = 36, lh = 13, lx = M + (S - lw) / 2;
+		const link = qrLink(), Q = 21, qx = M + (S - Q) / 2, qy = H - 7.6 - 2.2 - Q;
+		const hasQr = !!(link && qrMatrix(link));
+		const ly = hasQr ? qy : H - 9.5 - lh;
+		const sw1 = f(0.35 * k), sw2 = f(0.18 * k);
 		const font = `font-family="Jost, 'Futura PT', Futura, sans-serif"`;
 
 		const art = `<svg class="deco-art" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-			<defs>${lattice(`lat${n}`, 3.6, pal.lattice, 0.2)}</defs>
-			<rect width="${W}" height="${H}" fill="${pal.bg}"/>
-			<rect width="${M}" height="${H}" fill="url(#lat${n})"/>
-			<polygon points="${chamfer(px, py, pw, ph, c)}" fill="${pal.plate}" stroke="${pal.line}" stroke-width="0.4"/>
-			<polygon points="${chamfer(px + d1, py + d1, pw - 2 * d1, ph - 2 * d1, c - 0.6)}" fill="none" stroke="${pal.line}" stroke-width="0.18"/>
-			<path d="M${f(bx1)} ${f(yTop)}V${f(yBot)}M${f(bx1 + 0.9)} ${f(yTop)}V${f(yBot)}M${f(bx2)} ${f(yTop)}V${f(yBot)}M${f(bx2 - 0.9)} ${f(yTop)}V${f(yBot)}" stroke="${pal.line}" stroke-width="0.18"/>
+			<rect width="${f(W)}" height="${f(H)}" fill="${pal.bg}"/>
+			<path d="${lattice(M, H, 3.6)}" fill="none" stroke="${pal.lattice}" stroke-width="${f(0.2 * (1 + (k - 1) * 0.6))}" stroke-linecap="round" stroke-linejoin="round"/>
+			<rect x="${f(M)}" width="${S}" height="${f(H)}" fill="${pal.bg}"/>
+			<polygon points="${chamfer(px, py, pw, ph, c)}" fill="${pal.plate}" stroke="${pal.line}" stroke-width="${f(0.4 * k)}"/>
+			<polygon points="${chamfer(px + d1, py + d1, pw - 2 * d1, ph - 2 * d1, c - 0.6)}" fill="none" stroke="${pal.line}" stroke-width="${sw2}"/>
+			<path d="M${f(bx1)} ${f(yTop)}V${f(yBot)}M${f(bx1 + 0.9)} ${f(yTop)}V${f(yBot)}M${f(bx2)} ${f(yTop)}V${f(yBot)}M${f(bx2 - 0.9)} ${f(yTop)}V${f(yBot)}" stroke="${pal.line}" stroke-width="${sw2}"/>
 			${diamond(px + c / 2, py + c / 2, 0.9, pal.light)}${diamond(px + pw - c / 2, py + c / 2, 0.9, pal.light)}
 			${diamond(px + c / 2, py + ph - c / 2, 0.9, pal.light)}${diamond(px + pw - c / 2, py + ph - c / 2, 0.9, pal.light)}
-			<circle cx="${f(px + pw / 2)}" cy="${py}" r="2.6" fill="${pal.plate}" stroke="${pal.line}" stroke-width="0.35"/>
+			<circle cx="${f(px + pw / 2)}" cy="${py}" r="2.6" fill="${pal.plate}" stroke="${pal.line}" stroke-width="${sw1}"/>
 			${diamond(px + pw / 2, py, 1.3, pal.light)}
-			<rect x="${f(plX)}" y="${f(plY)}" width="${plW}" height="${plH}" fill="${pal.plate}" stroke="${pal.line}" stroke-width="0.3"/>
-			<text x="${f(px + pw / 2)}" y="${f(plY + plH / 2 + 0.8)}" text-anchor="middle" ${font} font-size="2.3" letter-spacing="0.5" fill="${pal.line}">Nº ${no}</text>
-			<polygon points="${chamfer(sx, 4, sw, H - 8, 4)}" fill="none" stroke="${pal.line}" stroke-width="0.35"/>
-			<polygon points="${chamfer(sx + d2, 4 + d2, sw - 2 * d2, H - 8 - 2 * d2, 3.5)}" fill="none" stroke="${pal.line}" stroke-width="0.18"/>
+			<rect x="${f(plX)}" y="${f(plY)}" width="${plW}" height="${plH}" fill="${pal.plate}" stroke="${pal.line}" stroke-width="${f(0.3 * k)}"/>
+			<text x="${f(px + pw / 2)}" y="${f(plY + plH / 2 + 0.8)}" text-anchor="middle" ${font} font-size="2.3" font-weight="${wt().med}" letter-spacing="0.5" fill="${pal.light}">Nº ${no}</text>
+			<polygon points="${chamfer(sx, 4, sw, H - 8, 4)}" fill="none" stroke="${pal.line}" stroke-width="${sw1}"/>
+			<polygon points="${chamfer(sx + d2, 4 + d2, sw - 2 * d2, H - 8 - 2 * d2, 3.5)}" fill="none" stroke="${pal.line}" stroke-width="${sw2}"/>
 			${diamond(sx + 2, 6, 0.75, pal.light)}${diamond(sx + sw - 2, 6, 0.75, pal.light)}${diamond(sx + 2, H - 6, 0.75, pal.light)}${diamond(sx + sw - 2, H - 6, 0.75, pal.light)}
-			<line x1="${M}" y1="0" x2="${M}" y2="${H}" stroke="${pal.line}" stroke-width="0.3" stroke-dasharray="1 1"/>
-			<circle cx="${M}" cy="0" r="3" fill="#fff"/><circle cx="${M}" cy="${H}" r="3" fill="#fff"/>
-			<rect x="${f(lx)}" y="${f(ly)}" width="${lw}" height="${lh}" fill="${pal.label}" stroke="${pal.line}" stroke-width="0.25"/>
+			<line x1="${f(M)}" y1="0" x2="${f(M)}" y2="${f(H)}" stroke="${pal.line}" stroke-width="${f(0.3 * k)}" stroke-dasharray="1 1"/>
+			<circle cx="${f(M)}" cy="0" r="3" fill="#fff"/><circle cx="${f(M)}" cy="${f(H)}" r="3" fill="#fff"/>
+			${hasQr ? `
+			${qrGroup(link, qx, qy, Q, pal.bars, pal.label)}
+			<rect x="${f(qx)}" y="${f(qy)}" width="${Q}" height="${Q}" fill="none" stroke="${pal.line}" stroke-width="${f(0.25 * k)}"/>
+			${s.qrcap ? `<text x="${f(M + S / 2)}" y="${f(qy + Q + 2.5)}" text-anchor="middle" ${font} font-size="2" font-weight="${wt().med}" letter-spacing="0.45" fill="${pal.line}">${esc(s.qrcap.toUpperCase())}</text>` : ''}` : `
+			<rect x="${f(lx)}" y="${f(ly)}" width="${lw}" height="${lh}" fill="${pal.label}" stroke="${pal.line}" stroke-width="${f(0.25 * k)}"/>
 			${barcode(no, lx + 4, ly + 1.6, lw - 8, lh - 5, pal.bars)}
-			<text x="${f(lx + lw / 2)}" y="${f(ly + lh - 1.1)}" text-anchor="middle" ${font} font-size="2.3" letter-spacing="1" fill="${pal.bars}">${no}</text>
+			<text x="${f(lx + lw / 2)}" y="${f(ly + lh - 1.1)}" text-anchor="middle" ${font} font-size="2.3" letter-spacing="1" fill="${pal.bars}">${no}</text>`}
 		</svg>`;
 
 		const box = (x, y, w, h, cls, inner) => `<div class="d-box ${cls}" style="left:${f(x)}mm;top:${f(y)}mm;width:${f(w)}mm;height:${f(h)}mm">${inner}</div>`;
@@ -482,7 +610,7 @@ body {
 			${s.subtitle ? `<div class="subtitle">${esc(s.subtitle)}</div>` : ''}
 			${fan(pal, true)}
 			${time ? `<div class="d-time">${time}</div>` : ''}
-			${guest && guest.name ? `<div class="guest-main">Reserved for <b>${esc(guest.name)}</b></div>` : s.dress ? `<div class="dress">${esc(s.dress)}</div>` : ''}`;
+			${seatLine(guest) ? `<div class="guest-main">${seatLine(guest)}</div>` : s.dress ? `<div class="dress">${esc(s.dress)}</div>` : ''}`;
 		const stub = `
 			${s.stub ? `<div class="kicker">${esc(s.stub)}</div>` : ''}
 			<div class="num">${goldText(no, {size: 34.7, track: 0.06, maxW: 150, bevel: true})}</div>
@@ -527,7 +655,7 @@ body {
 				${s.subtitle ? `<div class="subtitle">${esc(s.subtitle)}</div>` : ''}
 				<div class="rule"></div>
 				${details ? `<div class="details">${details}</div>` : ''}
-				${guest && guest.name ? `<div class="guest-main">Reserved for <b>${esc(guest.name)}</b></div>` : s.dress ? `<div class="dress">${esc(s.dress)}</div>` : ''}
+				${seatLine(guest) ? `<div class="guest-main">${seatLine(guest)}</div>` : s.dress ? `<div class="dress">${esc(s.dress)}</div>` : ''}
 				<div class="no-main">Nº ${no}</div>
 			</section>
 			<section class="stub">
@@ -542,6 +670,7 @@ body {
 					<div class="field"><div class="label">Seat</div><div class="line">${esc(guest?.seat || '')}</div></div>
 				</div>` : `<div class="small-title">${esc(s.title)}${s.subtitle ? ` · ${esc(s.subtitle)}` : ''}</div>`}
 				${guest && guest.name ? `<div class="guest">${esc(guest.name)}</div>` : ''}
+				${qrLink() && qrMatrix(qrLink()) ? `<div class="qr">${qrSvg(qrLink(), '#0b1a33', '#ffffff')}${s.qrcap ? `<div class="qr-cap">${esc(s.qrcap)}</div>` : ''}</div>` : ''}
 			</section>
 		</div>`;
 	};
@@ -550,16 +679,16 @@ body {
 	// wider than the space go onto two balanced lines; the image then scales to fit.
 	const PX = 96 / 25.4;
 	const DPI_SCALE = 600 / 96;
-	const titleWidth = () => (210 - 2 * (state.edge === 'bleed' ? 0 : 5) - 54 - 18) * PX;
+	const titleWidth = () => { const G = geo(); return (G.tw - 2 * G.strip - 54 - 18) * PX; };
 	const GOLD_STOPS = {
 		navy: [[0, '#8a6a26'], [0.22, '#c9a24a'], [0.42, '#f3dc95'], [0.48, '#fff6dc'], [0.54, '#f3dc95'], [0.7, '#c9a24a'], [1, '#8a6a26']],
 		ivory: [[0, '#6e5219'], [0.25, '#8a6a26'], [0.45, '#b08a37'], [0.5, '#c9a24a'], [0.55, '#b08a37'], [0.75, '#8a6a26'], [1, '#6e5219']],
 	};
 	let goldCache = new Map();
-	const goldText = (raw, {size, size2 = size, track, maxW, weight = 500, bevel = false}) => {
+	const goldText = (raw, {size, size2 = size, track, maxW, weight = wt().gold, bevel = false}) => {
 		const text = String(raw).toUpperCase().trim() || ' ';
 		const theme = state.theme === 'ivory' ? 'ivory' : 'navy';
-		const key = [text, size, track, maxW, theme, bevel].join('|');
+		const key = [text, size, track, maxW, theme, bevel, weight].join('|');
 		if (goldCache.has(key)) return goldCache.get(key);
 
 		const ctx = document.createElement('canvas').getContext('2d');
@@ -628,23 +757,56 @@ body {
 		return out;
 	};
 
+	// Trim marks for a cutting board: lines from the paper edge up to just short of each cut,
+	// so you can line them up with the blade. Exact thirds: short ticks at the two cuts.
+	const marks = (G) => {
+		if (G.mode === 'bleed') return '';
+		let d = '';
+		if (G.mode === 'trim') {
+			const gap = 1.5;
+			for (let i = 0; i <= 3; i++) {
+				const y = f(G.my + i * G.th);
+				d += `M0 ${y}H${G.mx - gap}M${210 - G.mx + gap} ${y}H210`;
+			}
+			for (const x of [G.mx, 210 - G.mx]) d += `M${x} 0V${G.my - gap}M${x} ${297 - G.my + gap}V297`;
+		} else {
+			for (const y of [99, 198]) d += `M0 ${y}H4M206 ${y}H210`;
+		}
+		return `<svg class="marks" viewBox="0 0 210 297" aria-hidden="true"><path d="${d}" stroke="#000" stroke-width="0.25" fill="none"/></svg>`;
+	};
+
 	const render = () => {
+		const G = geo(), W8 = wt();
 		const guests = parseGuests(state.guests || '');
+		const perTable = Math.max(0, parseInt(state.perTable, 10) || 0);
 		const start = Math.max(0, parseInt(state.start, 10) || 0);
 		const count = guests.length || Math.min(600, Math.max(1, parseInt(state.count, 10) || 1));
 		const digits = Math.max(3, String(start + count - 1).length);
 		const pages = Math.ceil(count / 3);
 		const root = $('sheets');
-		root.className = `sheets ${state.theme === 'ivory' ? 'ivory' : ''} ${state.edge === 'bleed' ? 'bleed' : ''} ${state.design === 'sparkle' ? 'sparkle' : 'deco'}`;
-		document.documentElement.style.setProperty('--edge', state.edge === 'bleed' ? '0mm' : '5mm');
+		root.className = `sheets ${state.theme === 'ivory' ? 'ivory' : ''} ${G.mode} ${state.design === 'sparkle' ? 'sparkle' : 'deco'} w-${state.weight}`;
+		const css = {'--edge': `${G.strip}mm`, '--k': W8.k, '--w-light': W8.light, '--w-reg': W8.reg, '--w-med': W8.med};
+		for (const [name, v] of Object.entries(css)) document.documentElement.style.setProperty(name, String(v));
+		$('strip-wrap').style.display = G.mode === 'trim' ? '' : 'none';
+		$('cut-hint').textContent = G.mode === 'trim'
+			? `Tickets are ${f(G.tw)} × ${f(G.th).toFixed(1)} mm. Six straight cuts on the marks.`
+			: G.mode === 'frame'
+				? 'Tickets are 210 × 99 mm, with a 5 mm white edge so any printer works. Two cuts, at 99 and 198 mm.'
+				: 'Tickets are 210 × 99 mm, printed to the edge. For a print shop.';
 		let html = '';
 		for (let p = 0; p < pages; p++) {
 			html += '<div class="page">';
 			for (let k = 0; k < 3; k++) {
 				const i = p * 3 + k;
-				html += `<div class="slot">${i < count ? (state.design === 'sparkle' ? ticketHtml : decoTicket)(start + i, digits, guests[i]) : '<div class="empty-slot">Empty</div>'}</div>`;
+				let guest = guests[i] ? {...guests[i]} : perTable ? {name: '', table: '', seat: ''} : undefined;
+				if (guest && perTable && !guest.table && !guest.seat) {
+					guest.table = String(Math.floor(i / perTable) + 1);
+					guest.seat = String((i % perTable) + 1);
+				}
+				const pos = `left:${G.mx}mm;top:${f(G.my + k * G.th)}mm;width:${G.tw}mm;height:${f(G.th)}mm`;
+				html += `<div class="slot" style="${pos}">${i < count ? (state.design === 'sparkle' ? ticketHtml : decoTicket)(start + i, digits, guest) : '<div class="empty-slot">Empty</div>'}</div>`;
 			}
-			html += '<div class="cut c1"></div><div class="cut c2"></div></div>';
+			html += `${marks(G)}</div>`;
 		}
 		root.innerHTML = html;
 		$('summary').textContent = `${count} ticket${count === 1 ? '' : 's'} on ${pages} sheet${pages === 1 ? '' : 's'} of A4`;
@@ -664,11 +826,13 @@ body {
 		el.value = state[k] ?? '';
 		el.addEventListener('input', () => { state[k] = el.value; save(); render(); });
 	}
-	for (const k of ['count', 'start']) {
+	for (const k of ['count', 'start', 'perTable']) {
 		const el = $(k);
 		el.value = state[k];
 		el.addEventListener('input', () => { state[k] = el.value; save(); render(); });
 	}
+	$('strip').value = String(state.strip);
+	$('strip').addEventListener('change', (e) => { state.strip = +e.target.value; save(); render(); });
 	$('fields').checked = !!state.fields;
 	$('fields').addEventListener('change', (e) => { state.fields = e.target.checked; save(); render(); });
 	const seg = (id) => {
@@ -678,6 +842,7 @@ body {
 		sync();
 	};
 	seg('design');
+	seg('weight');
 	seg('theme');
 	seg('edge');
 	$('print').addEventListener('click', () => window.print());

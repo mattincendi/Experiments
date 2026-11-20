@@ -296,7 +296,15 @@ const server = http.createServer(async (req, res) => {
 	const p = url.pathname;
 	try {
 		if (p === '/' || p === '/index.html') return serveFile(req, res, path.join(ROOT, 'app', 'ui', 'index.html'));
-		if (p === '/tickets' || p === '/tickets/') return serveFile(req, res, path.join(ROOT, 'tickets', 'index.html'));
+		// Printable tickets: the page plus its vendored QR library.
+		if (p === '/tickets') {
+			res.writeHead(302, {location: '/tickets/'});
+			return res.end();
+		}
+		if (p.startsWith('/tickets/')) {
+			const f = p === '/tickets/' ? path.join(ROOT, 'tickets', 'index.html') : inside(path.join(ROOT, 'tickets'), p.slice(9));
+			return f ? serveFile(req, res, f) : sendJson(res, 400, {error: 'bad path'});
+		}
 		if (p.startsWith('/app/')) {
 			const f = inside(UI_BUILD, p.slice(5));
 			return f ? serveFile(req, res, f) : sendJson(res, 400, {error: 'bad path'});

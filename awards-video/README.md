@@ -37,14 +37,20 @@ The font is **Jost**, a free geometric font close to Futura. Long titles and nam
 
 ## Printed tickets
 
-`tickets/index.html` makes matching paper tickets: three per A4 sheet, cut crosswise into 210 × 99 mm, each with a numbered tear-off stub. Open it from the app (**Print tickets** in the sidebar, which fills in your event name) or double-click the file.
+`tickets/index.html` makes matching paper tickets: three per A4 sheet, cut crosswise, each with a numbered tear-off stub. Open it from the app (**Print tickets** in the sidebar, which fills in your event name) or double-click the file.
 
-- Set the event name, date, time, venue and dress code, and how many tickets you need, or paste a guest list (name, table, seat, one guest per line, straight from a spreadsheet) to get one ticket per guest.
-- **Art deco** (default): a gold tumbling-block pattern round a chamfered double frame, the date and venue running up the sides, fan ornaments, bevelled gold lettering, and a Code 39 barcode of the ticket number on the stub that scanners can read. **Sparkles** is a still of the video backdrop.
+- Set the event name, date, time, venue and dress code, and how many tickets you need.
+- **Table and seat:** paste a guest list, one ticket per line as `name, table, seat` (or three columns straight from a spreadsheet; leave the name out for a seat-only ticket: `, 4, 2`). Or set **Seats per table** to number tickets automatically (with 10: table 1 seats 1–10, then table 2…). They print on the ticket and on the stub.
+- **QR code:** paste a link and the stub gets a QR code that opens it, with a caption under it. The link is saved in your browser only, never in this folder. Leave it empty for a barcode of the ticket number instead.
+- **Art deco** (default): a gold cube pattern round a double frame with cut corners, the date and venue running up the sides, fan ornaments and raised gold lettering. **Sparkles** is a still of the video backdrop.
+- **Line weight:** Fine, Bold (default) or Extra bold. Bold and Extra bold thicken every gold line and make the small text heavier, which helps on navy.
 - **Navy & gold** matches the videos but covers almost the whole sheet in ink. **Ivory & gold** uses far less.
-- Print on **white** card. Printer ink is see-through, so gold and white can't be printed on blue card. The navy comes from the ink. For more than a few sheets, a print shop is usually cheaper than home ink.
-- **White edge** leaves a 5 mm white border round every ticket, so home printers that can't print to the edge still give even tickets. **Full bleed** is for a print shop.
-- Print with paper **A4**, margins **None**, scale **100%** and **Background graphics** on, ideally on 200–300 gsm card. Cut at the grey ticks (99 mm and 198 mm from the top).
+- **Cutting:**
+  - **Trim marks** (default): for a cutting board. Tickets are 194 × 93.7 mm inside an 8 mm margin, with black trim marks at the edges of the sheet and a white border round each ticket (none, 2, 3, 4 or 5 mm). Line each mark up with the blade: the two long sides first, then the four cuts across.
+  - **Exact thirds:** 210 × 99 mm with a 5 mm white edge, two cuts.
+  - **Full bleed:** 210 × 99 mm to the edge, for a print shop.
+- Print on **white** card (200–300 gsm). Printer ink is see-through, so gold and white can't be printed on blue card; the navy comes from the ink. In the print dialog choose **A4**, margins **None**, scale **100%** and **Background graphics** on. For more than a few sheets, a print shop is usually cheaper than home ink.
+- Everything is vector except the gold lettering, which is drawn at 600 dpi so it prints the same in every PDF viewer. The QR code uses [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (MIT), kept in `tickets/vendor/`.
 
 ## Using the app (easiest)
 
