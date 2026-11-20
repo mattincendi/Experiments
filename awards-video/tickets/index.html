@@ -173,6 +173,9 @@ body {
 .field { text-align: left; }
 .field .label { margin-bottom: 0.6mm; letter-spacing: 0.26em; }
 .field .line { border-bottom: calc(0.25mm * var(--k)) solid rgba(201, 162, 74, 0.8); height: 6.2mm; font-size: 11pt; font-weight: var(--w-med); line-height: 6mm; text-align: center; color: var(--gold-light); }
+/* printed numbers need no write-in line: show them larger, centred under their label */
+.field.filled { text-align: center; }
+.field.filled .line { border-bottom-color: transparent; font-size: 13pt; }
 .stub .guest { font-size: 7.4pt; font-weight: var(--w-reg); letter-spacing: 0.06em; margin-top: 3mm; line-height: 1.3; max-width: 100%; overflow-wrap: anywhere; }
 
 /* ------------------------------------------------------------ ivory (ink-saving) */
@@ -440,8 +443,11 @@ body {
 
 	// ---- Art deco design: tumbling-block lattice, chamfered double frames, fan ornaments.
 	const PAL = {
-		navy: {bg: '#0b1a33', plate: '#081530', line: '#c9a24a', light: '#f3dc95', lattice: 'rgba(201,162,74,0.62)', label: '#f4efe3', bars: '#0b1a33'},
-		ivory: {bg: '#f3ecdc', plate: '#fffdf8', line: '#8a6a26', light: '#8a6a26', lattice: 'rgba(138,106,38,0.4)', label: '#ffffff', bars: '#0b1a33'},
+		navy: {bg: '#0b1a33', plate: '#081530', line: '#c9a24a', light: '#f3dc95', latticeOpacity: 0.8, label: '#f4efe3', bars: '#0b1a33',
+			// white-gold light bands sweeping diagonally across the pattern
+			shimmer: [[0, '#6e5219'], [0.14, '#b08a37'], [0.27, '#f3dc95'], [0.33, '#fff8e6'], [0.39, '#f3dc95'], [0.52, '#b08a37'], [0.66, '#8a6a26'], [0.78, '#e9cf86'], [0.83, '#fff3d6'], [0.88, '#e9cf86'], [1, '#8a6a26']]},
+		ivory: {bg: '#f3ecdc', plate: '#fffdf8', line: '#8a6a26', light: '#8a6a26', latticeOpacity: 0.55, label: '#ffffff', bars: '#0b1a33',
+			shimmer: [[0, '#8a6a26'], [0.2, '#b08a37'], [0.33, '#d9bc72'], [0.46, '#b08a37'], [0.66, '#8a6a26'], [0.83, '#c9a24a'], [1, '#8a6a26']]},
 	};
 	const f = (v) => +v.toFixed(3);
 	const chamfer = (x, y, w, h, c) => [[x + c, y], [x + w - c, y], [x + w, y + c], [x + w, y + h - c], [x + w - c, y + h], [x + c, y + h], [x, y + h - c], [x, y + c]].map(([a, b]) => `${f(a)},${f(b)}`).join(' ');
@@ -541,6 +547,9 @@ body {
 		return Q ? `<svg viewBox="0 0 ${Q.n + 8} ${Q.n + 8}" role="img" aria-label="QR code">${qrGroup(text, 0, 0, Q.n + 8, ink, paper)}</svg>` : '';
 	};
 
+	// Table / seat on the stub: a blank write-in line, or the printed number.
+	const field = (label, value) => `<div class="field${value ? ' filled' : ''}"><div class="label">${label}</div><div class="line">${esc(value || '')}</div></div>`;
+
 	// "Reserved for Jane Smith · Table 4 · Seat 2", or whichever parts are known.
 	const seatLine = (guest) => {
 		if (!guest) return '';
@@ -572,7 +581,8 @@ body {
 
 		const art = `<svg class="deco-art" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
 			<rect width="${f(W)}" height="${f(H)}" fill="${pal.bg}"/>
-			<path d="${lattice(M, H, 3.6)}" fill="none" stroke="${pal.lattice}" stroke-width="${f(0.2 * (1 + (k - 1) * 0.6))}" stroke-linecap="round" stroke-linejoin="round"/>
+			<defs><linearGradient id="shim${n}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${f(M)}" y2="${f(H * 1.4)}">${pal.shimmer.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('')}</linearGradient></defs>
+			<path d="${lattice(M, H, 3.6)}" fill="none" stroke="url(#shim${n})" stroke-opacity="${pal.latticeOpacity}" stroke-width="${f(0.2 * (1 + (k - 1) * 0.6))}" stroke-linecap="round" stroke-linejoin="round"/>
 			<rect x="${f(M)}" width="${S}" height="${f(H)}" fill="${pal.bg}"/>
 			<polygon points="${chamfer(px, py, pw, ph, c)}" fill="${pal.plate}" stroke="${pal.line}" stroke-width="${f(0.4 * k)}"/>
 			<polygon points="${chamfer(px + d1, py + d1, pw - 2 * d1, ph - 2 * d1, c - 0.6)}" fill="none" stroke="${pal.line}" stroke-width="${sw2}"/>
@@ -617,8 +627,8 @@ body {
 			<div class="num-label">Ticket</div>
 			${fan(pal)}
 			${showFields ? `<div class="fields">
-				<div class="field"><div class="label">Table</div><div class="line">${esc(guest?.table || '')}</div></div>
-				<div class="field"><div class="label">Seat</div><div class="line">${esc(guest?.seat || '')}</div></div>
+				${field('Table', guest?.table)}
+				${field('Seat', guest?.seat)}
 			</div>` : `<div class="small-title">${esc(s.title)}${s.subtitle ? ` · ${esc(s.subtitle)}` : ''}</div>`}
 			${guest && guest.name ? `<div class="guest">${esc(guest.name)}</div>` : ''}`;
 
@@ -666,8 +676,8 @@ body {
 				<div class="num-label">Ticket</div>
 				<div class="rule"></div>
 				${showFields ? `<div class="fields">
-					<div class="field"><div class="label">Table</div><div class="line">${esc(guest?.table || '')}</div></div>
-					<div class="field"><div class="label">Seat</div><div class="line">${esc(guest?.seat || '')}</div></div>
+					${field('Table', guest?.table)}
+					${field('Seat', guest?.seat)}
 				</div>` : `<div class="small-title">${esc(s.title)}${s.subtitle ? ` · ${esc(s.subtitle)}` : ''}</div>`}
 				${guest && guest.name ? `<div class="guest">${esc(guest.name)}</div>` : ''}
 				${qrLink() && qrMatrix(qrLink()) ? `<div class="qr">${qrSvg(qrLink(), '#0b1a33', '#ffffff')}${s.qrcap ? `<div class="qr-cap">${esc(s.qrcap)}</div>` : ''}</div>` : ''}
